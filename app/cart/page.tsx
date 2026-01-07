@@ -27,7 +27,7 @@ export default function CartPage() {
 
   const total = getTotal()
   // Shipping is free site-wide
-  const shipping = 0
+  const shipping: number = 0
   const finalTotal = total
 
   if (items.length === 0) {
