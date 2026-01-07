@@ -53,7 +53,7 @@ export default function CheckoutPage() {
   const paymentMethod = watch('paymentMethod')
   const total = getTotal()
   // Shipping fee removed; delivery is free and takes 7 business days
-  const shipping = 0
+  const shipping: number = 0
   const finalTotal = total
 
   const onSubmit = async (data: CheckoutFormData) => {

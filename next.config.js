@@ -1,3 +1,10 @@
+// Polyfill global location during build/server-side execution to avoid runtime ReferenceError
+// Some Next runtime chunks reference `location`/`window` during static generation. Defining a minimal
+// `globalThis.location` here prevents "location is not defined" errors during `next build`.
+if (typeof globalThis.location === 'undefined') {
+  globalThis.location = { origin: process.env.NEXT_PUBLIC_SITE_ORIGIN || 'http://localhost' }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
