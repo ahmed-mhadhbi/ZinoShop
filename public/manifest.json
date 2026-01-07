@@ -1,0 +1,28 @@
+{
+  "name": "ZinoShop - Luxury Jewelry",
+  "short_name": "ZinoShop",
+  "description": "Discover exquisite jewelry pieces crafted with precision and elegance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "icons": [],
+  "categories": ["shopping", "lifestyle"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Products",
+      "short_name": "Products",
+      "description": "Browse our jewelry collection",
+      "url": "/products",
+    },
+    {
+      "name": "Cart",
+      "short_name": "Cart",
+      "description": "View your shopping cart",
+      "url": "/cart"
+    }
+  ]
+}
+
