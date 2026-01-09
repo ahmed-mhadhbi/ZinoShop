@@ -87,8 +87,8 @@ npm run backend:dev
 ```
 
 The frontend will be available at `http://localhost:3000`
-The backend API will be available at `http://localhost:3001`
-API documentation (Swagger) at `http://localhost:3001/api/docs`
+The backend API will be available at `https://zinoshop.onrender.com/`
+API documentation (Swagger) at `https://zinoshop.onrender.com/api/docs`
 
 ## Project Structure
 
