@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zinoshop.onrender.com/'
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
@@ -16,7 +16,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
       console.error('Network error: Backend server may not be running')
-      error.message = 'Cannot connect to server. Please make sure the backend is running on port 3001.'
+      error.message = 'Cannot connect to server. Please make sure the backend is running at https://zinoshop.onrender.com/.'
     }
     return Promise.reject(error)
   }
