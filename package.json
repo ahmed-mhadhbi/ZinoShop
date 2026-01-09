@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "backend:dev": "cd backend && yarn start:dev",
-    "backend:build": "cd backend && yarn build"
+    "backend:build": "cd backend && yarn build",
+    "check:deploy": "node scripts/check-deploy.js"
   },
   "dependencies": {
     "next": "^14.0.4",
