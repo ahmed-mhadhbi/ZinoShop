@@ -104,6 +104,17 @@ caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
 
 After clearing, reload the page so the new build and service worker take effect.
 
+Quick health check
+
+- From your local machine you can verify the deployed backend quickly:
+
+```bash
+# Uses NEXT_PUBLIC_API_URL env if set, otherwise defaults to https://zinoshop.onrender.com
+npm run check:deploy
+```
+
+This will hit `/api/health` and exit non-zero if the service is unreachable or times out.
+
 ## Project Structure
 
 ```
