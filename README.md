@@ -90,6 +90,11 @@ The frontend will be available at `http://localhost:3000`
 The backend API will be available at `https://zinoshop.onrender.com/`
 API documentation (Swagger) at `https://zinoshop.onrender.com/api/docs`
 
+### Deployment notes
+- Frontend (Vercel/Netlify/etc.): set environment variable `NEXT_PUBLIC_API_URL` to `https://zinoshop.onrender.com` and redeploy the frontend.
+- Backend (Render): set `FRONTEND_URL` to your frontend URL (e.g., `https://<your-frontend>.vercel.app`) and ensure the service uses the production start command `npm run start:prod` and a build command `npm run build`.
+- If you run into memory OOM on Render during build or start, add `NODE_OPTIONS=--max_old_space_size=4096` to Render's environment variables or increase the instance size.
+
 ## Project Structure
 
 ```
