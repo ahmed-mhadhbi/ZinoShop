@@ -95,6 +95,15 @@ API documentation (Swagger) at `https://zinoshop.onrender.com/api/docs`
 - Backend (Render): set `FRONTEND_URL` to your frontend URL (e.g., `https://<your-frontend>.vercel.app`) and ensure the service uses the production start command `npm run start:prod` and a build command `npm run build`.
 - If you run into memory OOM on Render during build or start, add `NODE_OPTIONS=--max_old_space_size=4096` to Render's environment variables or increase the instance size.
 
+- If you see clients still calling `localhost:3001` after frontend redeploy, the browser may be serving an old cached build from a service worker. Clear it by going to DevTools → Application → Service Workers → Unregister, then hard-refresh. Alternatively, run in the Console:
+
+```js
+navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+```
+
+After clearing, reload the page so the new build and service worker take effect.
+
 ## Project Structure
 
 ```

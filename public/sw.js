@@ -1,5 +1,5 @@
 // Service Worker for PWA functionality
-const CACHE_NAME = 'zinoshop-v1'
+const CACHE_NAME = 'zinoshop-v2'
 const urlsToCache = [
   '/',
   '/products',
@@ -7,8 +7,10 @@ const urlsToCache = [
   '/manifest.json',
 ]
 
-// Install event
+// Install event - force activate the new SW immediately
 self.addEventListener('install', (event) => {
+  // Activate worker immediately after install
+  self.skipWaiting()
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache)
@@ -45,16 +47,20 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event
 self.addEventListener('activate', (event) => {
+  // Take control of uncontrolled clients as soon as the worker activates
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName)
-          }
-        })
-      )
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName)
+            }
+          })
+        )
+      }),
+    ])
   )
 })
 
