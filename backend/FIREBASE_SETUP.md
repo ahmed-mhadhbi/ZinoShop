@@ -37,3 +37,6 @@ Security tips
 Troubleshooting
 - If Firebase fails to initialize, check Render/Vercel logs for JSON parse errors or missing `FIREBASE_PRIVATE_KEY` newlines.
 - Use `curl https://<backend>/api/health` and `curl https://<backend>/api/products/featured` to confirm backend reachability.
+
+Cache note:
+- The backend caches the `/api/products/featured` response in-memory for a short TTL to reduce load and improve latency. Set `FEATURED_CACHE_TTL_SECONDS` (default 60) in Render environment variables to tune the TTL.

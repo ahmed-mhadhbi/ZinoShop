@@ -133,17 +133,47 @@ export class ProductsService {
     await this.firestoreService.delete(this.collection, id);
   }
 
+  private featuredCache: { data: Product[]; expiresAt: number } | null = null;
+  private featuredCachePromise: Promise<Product[]> | null = null;
+
   async getFeatured(): Promise<Product[]> {
-    // Fetch all active products, then sort by rating in memory to avoid index requirement
-    const products = await this.firestoreService.findAll<Product>(
-      this.collection,
-      [{ field: 'isActive', operator: '==', value: true }],
-      undefined, // No orderBy to avoid index requirement
-    );
-    
-    // Sort by rating descending and take top 8
-    return products
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-      .slice(0, 8);
+    const ttlSeconds = Number(process.env.FEATURED_CACHE_TTL_SECONDS ?? 60);
+
+    const now = Date.now();
+    if (this.featuredCache && this.featuredCache.expiresAt > now) {
+      console.log('ProductsService.getFeatured: cache hit')
+      return this.featuredCache.data
+    }
+
+    // If a fetch is already in progress, await it to deduplicate concurrent calls
+    if (this.featuredCachePromise) {
+      console.log('ProductsService.getFeatured: awaiting in-flight fetch')
+      return this.featuredCachePromise
+    }
+
+    // Fetch and cache
+    this.featuredCachePromise = (async () => {
+      const start = Date.now()
+      console.log('ProductsService.getFeatured: cache miss, fetching from Firestore')
+
+      const products = await this.firestoreService.findAll<Product>(
+        this.collection,
+        [{ field: 'isActive', operator: '==', value: true }],
+        undefined, // No orderBy to avoid index requirement
+      );
+
+      const featured = products
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 8)
+
+      const duration = Date.now() - start
+      console.log(`ProductsService.getFeatured: fetched ${featured.length} items in ${duration}ms`) 
+
+      this.featuredCache = { data: featured, expiresAt: Date.now() + ttlSeconds * 1000 }
+      this.featuredCachePromise = null
+      return featured
+    })()
+
+    return this.featuredCachePromise
   }
 }
