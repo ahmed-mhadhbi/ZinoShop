@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import ProductCard from '@/components/products/ProductCard'
-import { Filter, Grid, List } from 'lucide-react'
+import { Filter, Grid, List, Sparkles } from 'lucide-react'
 import api from '@/lib/api'
 
 export default function ProductsPage() {
@@ -100,9 +100,29 @@ export default function ProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Loading products...</p>
+      <div className="pt-24 pb-20 min-h-screen">
+        <div className="container-custom">
+          <div className="flex flex-col items-center justify-center text-center mb-10">
+            <div className="flex items-center gap-2 text-primary-600 mb-2">
+              <Sparkles className="w-5 h-5 animate-bounce" />
+              <p className="font-semibold">Loading beautiful pieces for you...</p>
+              <Sparkles className="w-5 h-5 animate-bounce [animation-delay:120ms]" />
+            </div>
+            <p className="text-gray-600">Just a moment</p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4">
+            {Array.from({ length: 12 }).map((_, idx) => (
+              <div key={idx} className="card overflow-hidden">
+                <div className="aspect-square bg-gradient-to-br from-primary-100 via-pink-50 to-gold-100 animate-pulse" />
+                <div className="p-2 sm:p-3 space-y-2">
+                  <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3 w-2/3 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-6 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -224,8 +244,8 @@ export default function ProductsPage() {
         <div
           className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-              : 'space-y-6'
+              ? 'grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4'
+              : 'grid grid-cols-1 lg:grid-cols-4 gap-6'
           }
         >
           {sortedProducts.map((product, index) => (
@@ -236,6 +256,7 @@ export default function ProductsPage() {
               transition={{ delay: index * 0.05 }}
             >
               <ProductCard 
+                compact={viewMode === 'grid'}
                 product={{
                   id: product.id,
                   name: product.name,

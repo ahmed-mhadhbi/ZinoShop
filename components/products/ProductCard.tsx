@@ -22,7 +22,13 @@ interface Product {
   sku?: string
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  compact = false,
+}: {
+  product: Product
+  compact?: boolean
+}) {
   const addItem = useCartStore((state) => state.addItem)
   const { isAuthenticated } = useAuthStore()
   const router = useRouter()
@@ -85,7 +91,7 @@ export default function ProductCard({ product }: { product: Product }) {
             alt={product.name}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            sizes={compact ? '(max-width: 1024px) 50vw, 16vw' : '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw'}
           />
           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -99,24 +105,23 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
       </Link>
 
-      <div className="p-4">
+      <div className={compact ? 'p-2 sm:p-3' : 'p-4'}>
         <Link href={`/products/${product.id}`}>
-          <h3 className="font-semibold text-lg mb-2 hover:text-primary-600 transition-colors">
+          <h3 className={`${compact ? 'font-semibold text-sm sm:text-base mb-1' : 'font-semibold text-lg mb-2'} hover:text-primary-600 transition-colors line-clamp-2`}>
             {product.name}
           </h3>
         </Link>
 
 
-
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-primary-600">
+        <div className="flex items-center justify-between gap-2">
+          <span className={compact ? 'text-sm sm:text-lg font-bold text-primary-600' : 'text-2xl font-bold text-primary-600'}>
             {product.price.toLocaleString()} tnd
           </span>
           <button
             onClick={handleAddToCart}
-            className="btn-primary text-sm py-2 px-4"
+            className={compact ? 'btn-primary text-xs py-1.5 px-2.5' : 'btn-primary text-sm py-2 px-4'}
           >
-            Add to Cart
+            {compact ? 'Add' : 'Add to Cart'}
           </button>
         </div>
       </div>

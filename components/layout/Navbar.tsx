@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, ShoppingCart, Heart, User, Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCartStore } from '@/store/cartStore'
@@ -10,7 +11,6 @@ import { useAuthStore } from '@/store/authStore'
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [language, setLanguage] = useState<'en' | 'fr' | 'ar'>('en')
   const cartItems = useCartStore((state) => state.items)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
@@ -21,19 +21,6 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('zino-language') as 'en' | 'fr' | 'ar' | null
-    if (savedLanguage) {
-      setLanguage(savedLanguage)
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('zino-language', language)
-    document.documentElement.lang = language
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'
-  }, [language])
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const accountHref = isAuthenticated ? '/account' : '/auth/login?redirect=/account'
@@ -48,14 +35,20 @@ export default function Navbar() {
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-3xl font-serif font-bold text-primary-600">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/zino-logo.jpg"
+              alt="ZinoShop logo"
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-full object-cover border border-primary-200"
+              priority
+            />
+            <span className="text-2xl md:text-3xl font-serif font-bold text-primary-600">
               ZinoShop
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link
               href="/products"
@@ -77,20 +70,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Search & Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <div className="relative">
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'en' | 'fr' | 'ar')}
-                className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                aria-label="Language"
-              >
-                <option value="fr">Fr</option>
-                <option value="en">En</option>
-                <option value="ar">عر</option>
-              </select>
-            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -130,7 +110,6 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 text-gray-700"
@@ -140,7 +119,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -171,19 +149,6 @@ export default function Navbar() {
               >
                 Contact
               </Link>
-              <div className="pt-2">
-                <label className="block text-sm text-gray-600 mb-2">Language</label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as 'en' | 'fr' | 'ar')}
-                  className="input-field py-2"
-                  aria-label="Language"
-                >
-                  <option value="fr">Fr</option>
-                  <option value="en">En</option>
-                  <option value="ar">عر</option>
-                </select>
-              </div>
               <div className="pt-4 border-t space-y-2">
                 <Link
                   href="/wishlist"
@@ -214,4 +179,3 @@ export default function Navbar() {
     </nav>
   )
 }
-
