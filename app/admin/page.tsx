@@ -78,9 +78,9 @@ export default function AdminDashboard() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-serif font-bold">Admin Dashboard</h1>
-          <Link href="/admin/products/new" className="btn-primary flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold">Admin Dashboard</h1>
+          <Link href="/admin/products/new" className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
             <Plus className="w-5 h-5" />
             Add Product
           </Link>

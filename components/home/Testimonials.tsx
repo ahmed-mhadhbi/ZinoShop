@@ -6,27 +6,27 @@ import { Star, Quote } from 'lucide-react'
 const testimonials = [
   {
     id: 1,
-    name: 'Sarah Johnson',
-    role: 'Happy Customer',
+    name: 'Amina Ben Salah',
+    role: 'Sousse Customer',
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     rating: 5,
-    text: 'Absolutely stunning pieces! The quality is exceptional and the customer service was outstanding. I will definitely be back!',
+    text: 'Commande wsletni fi nharin, packaging yesser ndhif w el bague kifma fi taswira bel dhabt. Bravo ZinoShop.',
   },
   {
     id: 2,
-    name: 'Michael Chen',
-    role: 'Jewelry Enthusiast',
+    name: 'Yassine Trabelsi',
+    role: 'Tunis Customer',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     rating: 5,
-    text: 'The attention to detail in every piece is remarkable. I purchased a ring for my engagement and it exceeded all expectations.',
+    text: 'Khthit bracelet cadeau l okhti, qualité behya barcha w service client yjaweb bser3a. Thnx barcha.',
   },
   {
     id: 3,
-    name: 'Emily Rodriguez',
-    role: 'Loyal Customer',
+    name: 'Marwa Gharbi',
+    role: 'Sfax Customer',
     image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     rating: 5,
-    text: 'ZinoShop has become my go-to for all jewelry needs. Beautiful designs, fair prices, and fast shipping. Highly recommend!',
+    text: 'Prix raisonnable par rapport lel finition. Chrit necklace mel site w deja 3malt commande okhra. Nnsa7kom bih.',
   },
 ]
 
