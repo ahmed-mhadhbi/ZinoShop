@@ -10,9 +10,9 @@ import { useAuthStore } from '@/store/authStore'
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [language, setLanguage] = useState<'en' | 'fr' | 'ar'>('en')
   const cartItems = useCartStore((state) => state.items)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,7 +22,21 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('zino-language') as 'en' | 'fr' | 'ar' | null
+    if (savedLanguage) {
+      setLanguage(savedLanguage)
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('zino-language', language)
+    document.documentElement.lang = language
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'
+  }, [language])
+
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const accountHref = isAuthenticated ? '/account' : '/auth/login?redirect=/account'
 
   return (
     <nav
@@ -66,11 +80,23 @@ export default function Navbar() {
           {/* Search & Actions */}
           <div className="hidden md:flex items-center space-x-4">
             <div className="relative">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as 'en' | 'fr' | 'ar')}
+                className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                aria-label="Language"
+              >
+                <option value="fr">Fr</option>
+                <option value="en">En</option>
+                <option value="ar">عر</option>
+              </select>
+            </div>
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-64"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-48 lg:w-64"
               />
             </div>
             <Link
@@ -94,18 +120,14 @@ export default function Navbar() {
                 </motion.span>
               )}
             </Link>
-            {isAuthenticated ? (
-              <Link
-                href="/account"
-                className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <User className="w-6 h-6" />
-              </Link>
-            ) : (
-              <Link href="/auth/login" className="btn-primary text-sm py-2 px-4">
-                Sign In
-              </Link>
-            )}
+            <Link
+              href={accountHref}
+              className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
+              aria-label={isAuthenticated ? 'Account' : 'Log In'}
+              title={isAuthenticated ? 'Account' : 'Log In'}
+            >
+              <User className="w-6 h-6" />
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -149,6 +171,19 @@ export default function Navbar() {
               >
                 Contact
               </Link>
+              <div className="pt-2">
+                <label className="block text-sm text-gray-600 mb-2">Language</label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as 'en' | 'fr' | 'ar')}
+                  className="input-field py-2"
+                  aria-label="Language"
+                >
+                  <option value="fr">Fr</option>
+                  <option value="en">En</option>
+                  <option value="ar">عر</option>
+                </select>
+              </div>
               <div className="pt-4 border-t space-y-2">
                 <Link
                   href="/wishlist"
@@ -164,23 +199,13 @@ export default function Navbar() {
                 >
                   Cart ({cartCount})
                 </Link>
-                {isAuthenticated ? (
-                  <Link
-                    href="/account"
-                    className="block text-gray-700 hover:text-primary-600 font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Account
-                  </Link>
-                ) : (
-                  <Link
-                    href="/auth/login"
-                    className="block btn-primary text-center"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                )}
+                <Link
+                  href={accountHref}
+                  className={`block text-center font-medium ${isAuthenticated ? 'text-gray-700 hover:text-primary-600' : 'btn-primary'}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {isAuthenticated ? 'Account' : 'Log In'}
+                </Link>
               </div>
             </div>
           </motion.div>

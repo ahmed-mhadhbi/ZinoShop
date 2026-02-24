@@ -65,7 +65,7 @@ export default function ProductsPage() {
     }
   }
 
-  const categories = ['all', 'Rings', 'Necklaces', 'Bracelets', 'Earrings', 'Pendants', 'Other']
+  const categories = ['all', 'Rings', 'Necklaces', 'Bracelets', 'Earrings', 'Pendants', 'Bags', 'Other']
   const materials = ['all', 'Gold', 'Silver', 'Platinum', 'Pearl', 'Diamond', 'Other']
 
   // Client-side sorting only (filtering is done server-side)
@@ -123,15 +123,15 @@ export default function ProductsPage() {
 
         {/* Filters and Sort */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="btn-outline flex items-center gap-2"
+              className="btn-outline flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <Filter className="w-5 h-5" />
               Filters
             </button>
-            <div className="flex items-center gap-2 border rounded-lg p-1">
+            <div className="flex items-center gap-2 border rounded-lg p-1 w-full sm:w-auto justify-center">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded ${
@@ -158,7 +158,7 @@ export default function ProductsPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="input-field w-auto"
+            className="input-field w-full md:w-auto"
           >
             <option value="newest">Newest</option>
             <option value="price-low">Price: Low to High</option>
@@ -185,13 +185,13 @@ export default function ProductsPage() {
                     <button
                       key={category}
                       onClick={() => handleCategoryChange(category)}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
+                      className={`px-4 py-2 rounded-lg transition-colors capitalize ${
                         selectedCategory === category
                           ? 'bg-primary-600 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                      {category}
                     </button>
                   ))}
                 </div>
