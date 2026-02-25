@@ -49,6 +49,12 @@ export class CreateProductDto {
   @IsString({ each: true })
   images?: string[];
 
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  variants?: string[];
+
   @ApiProperty({ required: false, default: 0 })
   @IsOptional()
   @IsNumber()

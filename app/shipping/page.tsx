@@ -5,11 +5,11 @@ import { Truck, Clock, Shield, Package } from 'lucide-react'
 
 const shippingOptions = [
   {
-    name: 'Standard Delivery',
-    price: 0,
-    time: '7 business days',
+    name: 'Livraison standard',
+    price: 8,
+    time: '7 jours ouvrables',
     icon: Truck,
-    condition: 'Free delivery on all orders',
+    condition: 'Frais de livraison fixes sur toutes les commandes',
   },
 ]
 
@@ -25,10 +25,10 @@ export default function ShippingPage() {
           className="text-center mb-12"
         >
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-            Shipping Information
+            Informations de livraison
           </h1>
           <p className="text-xl text-gray-600">
-            Fast, secure, and reliable shipping options
+            Options de livraison rapides, securisees et fiables
           </p>
         </motion.div>
 
@@ -45,7 +45,7 @@ export default function ShippingPage() {
                   <Icon className="w-12 h-12 text-primary-600 mx-auto mb-4" />
                   <h3 className="font-semibold text-lg mb-2">{option.name}</h3>
                   <p className="text-2xl font-bold text-primary-600 mb-2">
-                    {option.price === 0 ? 'Free' : `${option.price.toLocaleString()} tnd`}
+                    {`${option.price.toLocaleString()} tnd`}
                   </p>
                   <p className="text-gray-600 text-sm mb-2">{option.time}</p>
                   {option.condition && (
@@ -63,36 +63,36 @@ export default function ShippingPage() {
             className="card p-8"
           >
             <h2 className="text-2xl font-serif font-bold mb-6">
-              Shipping Details
+              Details de livraison
             </h2>
             <div className="space-y-4 text-gray-700">
               <div className="flex items-start space-x-4">
                 <Truck className="w-6 h-6 text-primary-600 mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Processing & Delivery</h3>
+                  <h3 className="font-semibold mb-1">Traitement et livraison</h3>
                   <p>
-                    Orders are typically processed within 1 business day. Delivery takes 7 business days.
+                    Les commandes sont traitees sous 1 jour ouvrable. La livraison prend 7 jours ouvrables.
                   </p>
                 </div>
               </div>
               <div className="flex items-start space-x-4">
                 <Shield className="w-6 h-6 text-primary-600 mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Secure Packaging</h3>
+                  <h3 className="font-semibold mb-1">Emballage securise</h3>
                   <p>
-                    All items are carefully packaged to ensure they arrive in
-                    perfect condition. High-value items are shipped with
-                    additional security measures.
+                    Tous les articles sont emballes avec soin pour arriver en
+                    parfait etat. Les articles de grande valeur sont expedies
+                    avec des mesures de securite supplementaires.
                   </p>
                 </div>
               </div>
               <div className="flex items-start space-x-4">
                 <Package className="w-6 h-6 text-primary-600 mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Tracking</h3>
+                  <h3 className="font-semibold mb-1">Suivi</h3>
                   <p>
-                    You will receive a tracking number via email once your order
-                    ships. Use this to track your package in real-time.
+                    Vous recevrez un numero de suivi par e-mail des l expedition.
+                    Utilisez-le pour suivre votre colis en temps reel.
                   </p>
                 </div>
               </div>

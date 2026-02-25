@@ -20,6 +20,11 @@ class OrderItemDto {
   @IsNumber()
   @Min(1)
   quantity: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  variant?: string;
 }
 
 export class CreateOrderDto {

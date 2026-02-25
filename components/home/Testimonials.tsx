@@ -7,7 +7,7 @@ const testimonials = [
   {
     id: 1,
     name: 'Amina Ben Salah',
-    role: 'Sousse Customer',
+    role: 'Cliente de Sousse',
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     rating: 5,
     text: 'Commande wsletni fi nharin, packaging yesser ndhif w el bague kifma fi taswira bel dhabt. Bravo ZinoShop.',
@@ -15,7 +15,7 @@ const testimonials = [
   {
     id: 2,
     name: 'Yassine Trabelsi',
-    role: 'Tunis Customer',
+    role: 'Client de Tunis',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     rating: 5,
     text: 'Khthit bracelet cadeau l okhti, qualité behya barcha w service client yjaweb bser3a. Thnx barcha.',
@@ -23,7 +23,7 @@ const testimonials = [
   {
     id: 3,
     name: 'Marwa Gharbi',
-    role: 'Sfax Customer',
+    role: 'Cliente de Sfax',
     image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
     rating: 5,
     text: 'Prix raisonnable par rapport lel finition. Chrit necklace mel site w deja 3malt commande okhra. Nnsa7kom bih.',
@@ -42,10 +42,10 @@ export default function Testimonials() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-            What Our Customers Say
+            Avis de nos clients
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it - hear from our satisfied customers
+            Ne nous croyez pas sur parole: lisez les retours de nos clients
           </p>
         </motion.div>
 

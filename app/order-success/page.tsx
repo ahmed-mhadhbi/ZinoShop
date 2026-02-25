@@ -15,32 +15,32 @@ export default function OrderSuccessPage() {
           </div>
 
           <h1 className="text-4xl font-serif font-bold mb-4">
-            Order Placed Successfully!
+            Commande confirmee avec succes !
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Thank you for your purchase. We've received your order and will
-            process it shortly.
+            Merci pour votre achat. Nous avons recu votre commande et nous la
+            traiterons tres bientot.
           </p>
 
           <div className="bg-gray-50 rounded-lg p-6 mb-8">
             <div className="flex items-center justify-center space-x-2 text-gray-700 mb-4">
               <Package className="w-5 h-5" />
-              <span className="font-semibold">What's Next?</span>
+              <span className="font-semibold">Et maintenant ?</span>
             </div>
             <ul className="text-left space-y-2 text-gray-600">
-              <li>• You will receive an order confirmation email shortly</li>
-              <li>• We'll notify you when your order ships</li>
-              <li>• Track your order in your account</li>
+              <li>- Vous recevrez bientot un e-mail de confirmation</li>
+              <li>- Nous vous informerons quand la commande sera expediee</li>
+              <li>- Suivez votre commande depuis votre compte</li>
             </ul>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/account/orders" className="btn-primary">
-              View My Orders
+              Voir mes commandes
             </Link>
             <Link href="/" className="btn-outline">
               <Home className="w-5 h-5 inline mr-2" />
-              Continue Shopping
+              Continuer vos achats
             </Link>
           </div>
         </div>
@@ -48,4 +48,3 @@ export default function OrderSuccessPage() {
     </div>
   )
 }
-

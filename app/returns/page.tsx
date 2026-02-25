@@ -15,10 +15,10 @@ export default function ReturnsPage() {
           className="text-center mb-12"
         >
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-            Returns & Exchanges
+            Retours et echanges
           </h1>
           <p className="text-xl text-gray-600">
-            We want you to be completely satisfied with your purchase
+            Nous voulons que vous soyez totalement satisfait de votre achat
           </p>
         </motion.div>
 
@@ -31,32 +31,32 @@ export default function ReturnsPage() {
             <div className="flex items-center space-x-4 mb-6">
               <RotateCcw className="w-8 h-8 text-primary-600" />
               <h2 className="text-2xl font-serif font-bold">
-                30-Day Return Policy
+                Politique de retour sous 30 jours
               </h2>
             </div>
             <p className="text-gray-700 mb-4">
-              We offer a 30-day return policy on all items. If you're not
-              completely satisfied with your purchase, you can return it for a
-              full refund or exchange.
+              Nous proposons une politique de retour sous 30 jours sur tous les
+              articles. Si vous n etes pas satisfait, vous pouvez retourner
+              l article pour remboursement ou echange.
             </p>
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold">Eligible Items</p>
+                  <p className="font-semibold">Articles eligibles</p>
                   <p className="text-gray-600 text-sm">
-                    Items must be in original condition with all tags attached
-                    and original packaging included.
+                    Les articles doivent etre dans leur etat d origine avec
+                    etiquettes et emballage d origine.
                   </p>
                 </div>
               </div>
               <div className="flex items-start space-x-3">
                 <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold">Non-Returnable Items</p>
+                  <p className="font-semibold">Articles non retournables</p>
                   <p className="text-gray-600 text-sm">
-                    Custom or personalized items, items damaged by misuse, and
-                    items without original packaging are not eligible for return.
+                    Les articles personnalises, endommages par mauvaise
+                    utilisation, ou sans emballage d origine ne sont pas eligibles.
                   </p>
                 </div>
               </div>
@@ -72,7 +72,7 @@ export default function ReturnsPage() {
             <div className="flex items-center space-x-4 mb-6">
               <Clock className="w-8 h-8 text-primary-600" />
               <h2 className="text-2xl font-serif font-bold">
-                How to Return
+                Comment retourner un article
               </h2>
             </div>
             <ol className="space-y-4 text-gray-700">
@@ -81,10 +81,10 @@ export default function ReturnsPage() {
                   1
                 </span>
                 <div>
-                  <p className="font-semibold">Contact Us</p>
+                  <p className="font-semibold">Contactez-nous</p>
                   <p className="text-sm">
-                    Email us at returns@zinoshop.com or use the contact form to
-                    initiate a return.
+                    Ecrivez-nous a returns@zinoshop.com ou via le formulaire de
+                    contact pour lancer la demande de retour.
                   </p>
                 </div>
               </li>
@@ -93,10 +93,10 @@ export default function ReturnsPage() {
                   2
                 </span>
                 <div>
-                  <p className="font-semibold">Package Your Item</p>
+                  <p className="font-semibold">Emballez votre article</p>
                   <p className="text-sm">
-                    Securely package the item in its original packaging with all
-                    tags attached.
+                    Emballez l article de facon securisee dans son emballage
+                    d origine avec toutes les etiquettes.
                   </p>
                 </div>
               </li>
@@ -105,10 +105,10 @@ export default function ReturnsPage() {
                   3
                 </span>
                 <div>
-                  <p className="font-semibold">Ship It Back</p>
+                  <p className="font-semibold">Expediez le retour</p>
                   <p className="text-sm">
-                    We'll provide you with a prepaid return label. Ship the
-                    item back to us within 30 days of purchase.
+                    Nous fournissons une etiquette de retour prepayee.
+                    Expediez l article sous 30 jours apres l achat.
                   </p>
                 </div>
               </li>
@@ -117,10 +117,10 @@ export default function ReturnsPage() {
                   4
                 </span>
                 <div>
-                  <p className="font-semibold">Receive Refund</p>
+                  <p className="font-semibold">Recevez votre remboursement</p>
                   <p className="text-sm">
-                    Once we receive and inspect your return, we'll process your
-                    refund within 5-7 business days.
+                    Apres reception et verification du retour, le remboursement
+                    est traite sous 5 a 7 jours ouvrables.
                   </p>
                 </div>
               </li>

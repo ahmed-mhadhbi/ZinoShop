@@ -12,6 +12,7 @@ interface FeaturedProduct {
   price: number
   images?: string[]
   image?: string
+  variants?: string[]
   rating?: number
   reviewCount?: number
   sku?: string
@@ -30,7 +31,7 @@ export default function FeaturedProducts() {
         if (!cancelled) setProducts(res.data || [])
       } catch (err: any) {
         console.error('Failed to fetch featured products', err)
-        toast.error(err?.response?.data?.message || 'Failed to load featured products')
+        toast.error(err?.response?.data?.message || 'Echec du chargement des produits en vedette')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -63,10 +64,10 @@ export default function FeaturedProducts() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-            Featured Products
+            Produits en vedette
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Handpicked selections from our finest collection
+            Une selection soignee de notre meilleure collection
           </p>
         </motion.div>
 
@@ -88,6 +89,7 @@ export default function FeaturedProducts() {
                   price: product.price,
                   images: product.images,
                   image: product.image,
+                  variants: product.variants,
                   rating: product.rating,
                   reviews: product.reviewCount,
                   sku: product.sku,
@@ -96,7 +98,7 @@ export default function FeaturedProducts() {
             ))
           ) : (
             <div className="col-span-full text-center text-gray-600">
-              No featured products available at the moment.
+              Aucun produit en vedette pour le moment.
             </div>
           )}
         </div>
@@ -112,7 +114,7 @@ export default function FeaturedProducts() {
             href="/products"
             className="btn-primary inline-flex items-center"
           >
-            View All Products
+            Voir tous les produits
           </a>
         </motion.div>
       </div>

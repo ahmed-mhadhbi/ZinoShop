@@ -12,11 +12,11 @@ import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 
 const checkoutSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  firstName: z.string().min(2, 'First name is required'),
-  lastName: z.string().min(2, 'Last name is required'),
-  address: z.string().min(5, 'Address is required'),
-  phone: z.string().min(10, 'Valid phone number is required'),
+  email: z.string().email('Adresse email invalide'),
+  firstName: z.string().min(2, 'Le prenom est obligatoire'),
+  lastName: z.string().min(2, 'Le nom est obligatoire'),
+  address: z.string().min(5, 'L adresse est obligatoire'),
+  phone: z.string().min(10, 'Numero de telephone invalide'),
   paymentMethod: z.enum(['pay_on_delivery']),
   saveInfo: z.boolean().default(false),
 })
@@ -52,13 +52,12 @@ export default function CheckoutPage() {
 
   const paymentMethod = watch('paymentMethod')
   const total = getTotal()
-  // Shipping fee removed; delivery is free and takes 7 business days
-  const shipping: number = 0
-  const finalTotal = total
+  const shipping: number = 8
+  const finalTotal = total + shipping
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (!isAuthenticated) {
-      toast.error('Please login to place an order')
+      toast.error('Veuillez vous connecter pour passer une commande')
       router.push('/auth/login?redirect=/checkout')
       return
     }
@@ -71,6 +70,7 @@ export default function CheckoutPage() {
         items: items.map(item => ({
           productId: item.id,
           quantity: item.quantity,
+          variant: item.variant,
         })),
         paymentMethod: data.paymentMethod,
         customerFirstName: data.firstName,
@@ -78,7 +78,7 @@ export default function CheckoutPage() {
         shippingAddress: data.address,
         shippingPhone: data.phone,
         shipping: shipping,
-        notes: `Customer Email: ${data.email}`,
+        notes: `Email client: ${data.email}`,
       }
 
       console.log('Submitting order:', orderData)
@@ -88,7 +88,7 @@ export default function CheckoutPage() {
       
       console.log('Order created:', response.data)
 
-      toast.success('Order placed successfully!')
+      toast.success('Commande validee avec succes !')
       clearCart()
       router.push('/order-success')
     } catch (error: any) {
@@ -96,12 +96,12 @@ export default function CheckoutPage() {
       console.error('Error response:', error.response?.data)
       
       if (error.response?.status === 401) {
-        toast.error('Please login to place an order')
+        toast.error('Veuillez vous connecter pour passer une commande')
         router.push('/auth/login?redirect=/checkout')
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message)
       } else {
-        toast.error('Failed to place order. Please try again.')
+        toast.error('Echec de la commande. Veuillez reessayer.')
       }
     } finally {
       setIsProcessing(false)
@@ -116,18 +116,18 @@ export default function CheckoutPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom max-w-5xl">
-        <h1 className="text-4xl font-serif font-bold mb-8">Checkout</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Paiement</h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Checkout Form */}
           <div className="lg:col-span-2 space-y-8">
             {/* Contact Information */}
             <div className="card p-6">
-              <h2 className="text-2xl font-semibold mb-6">Contact Information</h2>
+              <h2 className="text-2xl font-semibold mb-6">Informations de contact</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    Email Address *
+                    Adresse e-mail *
                   </label>
                   <input
                     type="email"
@@ -143,7 +143,7 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    Phone Number *
+                    Numero de telephone *
                   </label>
                   <input
                     type="tel"
@@ -162,11 +162,11 @@ export default function CheckoutPage() {
 
             {/* Shipping Address */}
             <div className="card p-6">
-              <h2 className="text-2xl font-semibold mb-6">Shipping Address</h2>
+              <h2 className="text-2xl font-semibold mb-6">Adresse de livraison</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    First Name *
+                    Prenom *
                   </label>
                   <input
                     type="text"
@@ -181,7 +181,7 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    Last Name *
+                    Nom *
                   </label>
                   <input
                     type="text"
@@ -197,13 +197,13 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-4">
                 <label className="block text-sm font-semibold mb-2">
-                  Address *
+                  Adresse *
                 </label>
                 <input
                   type="text"
                   {...register('address')}
                   className="input-field"
-                  placeholder="Street address"
+                  placeholder="Adresse complete"
                 />
                 {errors.address && (
                   <p className="text-red-600 text-sm mt-1">
@@ -217,7 +217,7 @@ export default function CheckoutPage() {
             <div className="card p-6">
               <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
                 <Lock className="w-6 h-6" />
-                Payment Method
+                Methode de paiement
               </h2>
               <div className="space-y-4">
                 <label className="flex items-center p-4 border-2 rounded-lg bg-green-50 cursor-default">
@@ -228,7 +228,7 @@ export default function CheckoutPage() {
                     className="mr-4"
                     defaultChecked
                   />
-                  <span className="font-semibold">Pay on Delivery</span>
+                  <span className="font-semibold">Paiement a la livraison</span>
                 </label>
               </div>
             </div>
@@ -238,13 +238,14 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1">
             <div className="card p-6 sticky top-24">
               <h2 className="text-2xl font-serif font-bold mb-6">
-                Order Summary
+                Resume de commande
               </h2>
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
+                  <div key={`${item.id}-${item.variant || 'sans-variante'}`} className="flex justify-between text-sm">
                     <span className="text-gray-600">
-                      {item.name} x{item.quantity}
+                      {item.name}
+                      {item.variant ? ` (${item.variant})` : ''} x{item.quantity}
                     </span>
                     <span className="font-semibold">
                       {(item.price * item.quantity).toLocaleString()} tnd
@@ -253,20 +254,14 @@ export default function CheckoutPage() {
                 ))}
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-600">Sous-total</span>
                     <span className="font-semibold">
                       {total.toLocaleString()} tnd
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Shipping</span>
-                    <span className="font-semibold">
-                      {shipping === 0 ? (
-                        <span className="text-green-600">Free</span>
-                      ) : (
-                        `${shipping.toLocaleString()} tnd`
-                      )} 
-                    </span>
+                    <span className="text-gray-600">Livraison</span>
+                    <span className="font-semibold">{shipping.toLocaleString()} tnd</span>
                   </div>
                   <div className="border-t pt-4">
                     <div className="flex justify-between text-xl font-bold">
@@ -283,7 +278,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
                 className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Processing...' : 'Place Order'}
+                {isProcessing ? 'Traitement...' : 'Confirmer la commande'}
               </button>
             </div>
           </div>

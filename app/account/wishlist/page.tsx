@@ -71,7 +71,7 @@ export default function WishlistPage() {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -79,7 +79,7 @@ export default function WishlistPage() {
 
   const products = wishlistItems.map((item) => ({
     id: item.product?.id || item.productId,
-    name: item.product?.name || 'Product',
+    name: item.product?.name || 'Produit',
     price: item.product?.price || 0,
     image: item.product?.images?.[0] || '',
     rating: item.product?.rating || 0,
@@ -89,17 +89,17 @@ export default function WishlistPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom">
-        <h1 className="text-4xl font-serif font-bold mb-8">My Wishlist</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Ma liste de souhaits</h1>
 
         {wishlistItems.length === 0 ? (
           <div className="card p-12 text-center">
             <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">Your wishlist is empty</h2>
+            <h2 className="text-2xl font-semibold mb-2">Votre liste de souhaits est vide</h2>
             <p className="text-gray-600 mb-6">
-              Start adding items you love to your wishlist
+              Ajoutez vos articles preferes a votre liste de souhaits
             </p>
             <Link href="/products" className="btn-primary">
-              Browse Products
+              Voir les produits
             </Link>
           </div>
         ) : (

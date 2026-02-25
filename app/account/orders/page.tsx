@@ -37,7 +37,7 @@ export default function OrdersPage() {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -46,17 +46,17 @@ export default function OrdersPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom max-w-6xl">
-        <h1 className="text-4xl font-serif font-bold mb-8">My Orders</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Mes commandes</h1>
 
         {orders.length === 0 ? (
           <div className="card p-12 text-center">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No orders yet</h2>
+            <h2 className="text-2xl font-semibold mb-2">Aucune commande pour le moment</h2>
             <p className="text-gray-600 mb-6">
-              Start shopping to see your orders here
+              Commencez vos achats pour voir vos commandes ici
             </p>
             <Link href="/products" className="btn-primary">
-              Browse Products
+              Voir les produits
             </Link>
           </div>
         ) : (
@@ -69,10 +69,10 @@ export default function OrdersPage() {
                       <Package className="w-5 h-5 text-primary-600" />
                       <div>
                         <h3 className="font-semibold text-lg">
-                          Order #{order.orderNumber}
+                          Commande #{order.orderNumber}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {order.items?.length || 0} item(s)
+                          {order.items?.length || 0} article(s)
                         </p>
                       </div>
                     </div>
@@ -84,7 +84,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div>
-                        <span className="font-semibold">Status: </span>
+                        <span className="font-semibold">Statut: </span>
                         <span
                           className={`capitalize ${
                             order.status === 'delivered'
@@ -110,7 +110,7 @@ export default function OrdersPage() {
                       href={`/account/orders/${order.id}`}
                       className="btn-outline"
                     >
-                      View Details
+                      Voir details
                     </Link>
                   </div>
                 </div>

@@ -105,7 +105,10 @@ export class EmailService {
   async sendOrderNotificationToAdmin(order: any, customerEmail: string, customerName: string) {
     const itemsHtml = order.items?.map((item: any) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productName || 'N/A'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">
+          ${item.productName || 'N/A'}
+          ${item.variant ? `<div style="font-size: 12px; color: #666;">Variante: ${item.variant}</div>` : ''}
+        </td>
         <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productSku || 'N/A'}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${parseFloat(item.price).toLocaleString()}</td>
@@ -186,8 +189,8 @@ export class EmailService {
                       <td style="text-align: right; font-weight: bold; padding-top: 10px;">${parseFloat(order.subtotal).toLocaleString()} tnd</td>
                     </tr>
                     <tr>
-                      <td colspan="4" style="text-align: right; font-weight: bold;">Shipping:</td>
-                      <td style="text-align: right; font-weight: bold;">${parseFloat(order.shipping).toLocaleString() === '0' ? 'Free' : `${parseFloat(order.shipping).toLocaleString()} tnd`}</td>
+                      <td colspan="4" style="text-align: right; font-weight: bold;">Livraison:</td>
+                      <td style="text-align: right; font-weight: bold;">${parseFloat(order.shipping).toLocaleString()} tnd</td>
                     </tr>
                     <tr>
                       <td colspan="4" style="text-align: right; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 2px solid #ddd;">Total:</td>

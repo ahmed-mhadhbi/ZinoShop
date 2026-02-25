@@ -17,6 +17,7 @@ interface Product {
   price: number
   image?: string
   images?: string[]
+  variants?: string[]
   rating?: number
   reviews?: number
   sku?: string
@@ -41,20 +42,28 @@ export default function ProductCard({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
+
+    const hasVariants = Array.isArray(product.variants) && product.variants.length > 0
+    if (hasVariants) {
+      toast.error('Choisissez d abord une variante sur la fiche produit')
+      router.push(`/products/${product.id}`)
+      return
+    }
+
     addItem({
       id: product.id,
       name: product.name,
       price: product.price,
       image: productImage,
     })
-    toast.success('Added to cart!')
+    toast.success('Ajoute au panier !')
   }
 
   const handleAddToWishlist = async (e: React.MouseEvent) => {
     e.preventDefault()
     
     if (!isAuthenticated) {
-      toast.error('Please login to add items to wishlist')
+      toast.error('Veuillez vous connecter pour ajouter a la liste de souhaits')
       router.push('/auth/login?redirect=/account/wishlist')
       return
     }
@@ -63,16 +72,16 @@ export default function ProductCard({
     try {
       const response = await api.post(`/wishlist/${product.id}`)
       console.log('Added to wishlist:', response.data)
-      toast.success('Added to wishlist!')
+      toast.success('Ajoute a la liste de souhaits !')
       // Dispatch custom event to refresh wishlist page if it's open
       window.dispatchEvent(new CustomEvent('wishlistUpdated'))
     } catch (error: any) {
       console.error('Wishlist add error:', error)
       if (error.response?.status === 401) {
-        toast.error('Please login to add items to wishlist')
+        toast.error('Veuillez vous connecter pour ajouter a la liste de souhaits')
         router.push('/auth/login?redirect=/account/wishlist')
       } else {
-        toast.error(error.response?.data?.message || 'Failed to add to wishlist')
+        toast.error(error.response?.data?.message || 'Echec de l ajout a la liste de souhaits')
       }
     } finally {
       setIsAddingToWishlist(false)
@@ -121,7 +130,7 @@ export default function ProductCard({
             onClick={handleAddToCart}
             className={compact ? 'btn-primary text-xs py-1.5 px-2.5' : 'btn-primary text-sm py-2 px-4'}
           >
-            {compact ? 'Add' : 'Add to Cart'}
+            {compact ? 'Ajouter' : 'Ajouter au panier'}
           </button>
         </div>
       </div>

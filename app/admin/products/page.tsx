@@ -54,7 +54,7 @@ export default function AdminProductsPage() {
       }
     } catch (error: any) {
       console.error('Failed to fetch products:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to load products'
+      const errorMessage = error.response?.data?.message || error.message || 'Echec du chargement des produits'
       toast.error(errorMessage)
       setProducts([])
     } finally {
@@ -63,14 +63,14 @@ export default function AdminProductsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return
+    if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return
 
     try {
       await api.delete(`/products/${id}`)
-      toast.success('Product deleted successfully')
+      toast.success('Produit supprime avec succes')
       fetchProducts()
     } catch (error) {
-      toast.error('Failed to delete product')
+      toast.error('Echec de suppression du produit')
     }
   }
 
@@ -81,7 +81,7 @@ export default function AdminProductsPage() {
   if (!isAuthenticated || user?.role !== 'admin' || isLoading) {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-600">Chargement...</p>
       </div>
     )
   }
@@ -90,10 +90,10 @@ export default function AdminProductsPage() {
     <div className="pt-24 pb-20">
       <div className="container-custom">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-serif font-bold">Manage Products</h1>
+          <h1 className="text-4xl font-serif font-bold">Gerer les produits</h1>
           <Link href="/admin/products/new" className="btn-primary flex items-center gap-2">
             <Plus className="w-5 h-5" />
-            Add Product
+            Ajouter un produit
           </Link>
         </div>
 
@@ -103,7 +103,7 @@ export default function AdminProductsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Rechercher un produit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-field pl-10"
@@ -121,19 +121,19 @@ export default function AdminProductsPage() {
                     Image
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    Nom
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     SKU
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
+                    Prix
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stock
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Statut
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -181,7 +181,7 @@ export default function AdminProductsPage() {
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {product.isActive ? 'Active' : 'Inactive'}
+                        {product.isActive ? 'Actif' : 'Inactif'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -209,9 +209,9 @@ export default function AdminProductsPage() {
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">No products found</p>
+            <p className="text-gray-600 mb-4">Aucun produit trouve</p>
             <Link href="/admin/products/new" className="btn-primary">
-              Add Your First Product
+              Ajouter votre premier produit
             </Link>
           </div>
         )}

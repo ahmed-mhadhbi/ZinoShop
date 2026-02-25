@@ -5,6 +5,7 @@ export class OrderItem {
   productId: string;
   productName: string;
   productSku: string;
+  variant?: string;
   quantity: number;
   price: number;
   createdAt: Date;

@@ -38,7 +38,7 @@ export default function AdminUsersPage() {
       const response = await api.get('/users')
       setUsers(response.data || [])
     } catch (error) {
-      toast.error('Failed to load users')
+      toast.error('Echec du chargement des utilisateurs')
       setUsers([])
     } finally {
       setIsLoading(false)
@@ -50,10 +50,10 @@ export default function AdminUsersPage() {
     setUpdatingUserId(targetUser.id)
     try {
       await api.patch(`/users/${targetUser.id}`, { role: newRole })
-      toast.success('User role updated')
+      toast.success('Role utilisateur mis a jour')
       fetchUsers()
     } catch (error) {
-      toast.error('Failed to update role')
+      toast.error('Echec de mise a jour du role')
     } finally {
       setUpdatingUserId(null)
     }
@@ -61,18 +61,18 @@ export default function AdminUsersPage() {
 
   const handleDelete = async (targetUser: AdminUser) => {
     if (targetUser.id === user?.id) {
-      toast.error('You cannot delete your own admin account')
+      toast.error('Vous ne pouvez pas supprimer votre propre compte admin')
       return
     }
-    if (!confirm(`Delete user ${targetUser.email}?`)) return
+    if (!confirm(`Supprimer l utilisateur ${targetUser.email} ?`)) return
 
     setUpdatingUserId(targetUser.id)
     try {
       await api.delete(`/users/${targetUser.id}`)
-      toast.success('User deleted')
+      toast.success('Utilisateur supprime')
       fetchUsers()
     } catch (error) {
-      toast.error('Failed to delete user')
+      toast.error('Echec de suppression de l utilisateur')
     } finally {
       setUpdatingUserId(null)
     }
@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
   if (!isAuthenticated || user?.role !== 'admin' || isLoading) {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-600">Chargement...</p>
       </div>
     )
   }
@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
     <div className="pt-24 pb-20 min-h-screen">
       <div className="container-custom">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif font-bold">Manage Users</h1>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold">Gerer les utilisateurs</h1>
           <p className="text-gray-600">Total: {filteredUsers.length}</p>
         </div>
 
@@ -107,7 +107,7 @@ export default function AdminUsersPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name or email..."
+              placeholder="Rechercher par nom ou e-mail..."
               className="input-field pl-10"
             />
           </div>
@@ -115,11 +115,11 @@ export default function AdminUsersPage() {
 
         <div className="card p-4 md:p-6">
           {filteredUsers.length === 0 ? (
-            <p className="text-gray-600">No users found.</p>
+            <p className="text-gray-600">Aucun utilisateur trouve.</p>
           ) : (
             <div className="space-y-4">
               {filteredUsers.map((u) => {
-                const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'No name'
+                const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Sans nom'
                 return (
                   <div
                     key={u.id}
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
                       <p className="font-semibold text-gray-900 truncate">{fullName}</p>
                       <p className="text-sm text-gray-600 truncate">{u.email}</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Joined:{' '}
+                        Inscrit le:{' '}
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}
                       </p>
                     </div>
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
                           disabled={updatingUserId === u.id}
                           className="input-field py-2 min-w-32"
                         >
-                          <option value="user">User</option>
+                          <option value="user">Utilisateur</option>
                           <option value="admin">Admin</option>
                         </select>
                       </div>
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
                         className="px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         <Trash2 className="w-4 h-4" />
-                        Delete
+                        Supprimer
                       </button>
                     </div>
                   </div>

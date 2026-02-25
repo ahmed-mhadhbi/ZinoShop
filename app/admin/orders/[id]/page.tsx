@@ -25,7 +25,6 @@ export default function AdminOrderDetailPage() {
       const orderData = res.data;
       setOrder(orderData);
 
-      // Prefer customer name saved on order, otherwise try to fetch user profile
       if (orderData.customerFirstName || orderData.customerLastName) {
         setUserName(`${orderData.customerFirstName || ""} ${orderData.customerLastName || ""}`.trim());
       } else if (orderData.userId) {
@@ -34,19 +33,19 @@ export default function AdminOrderDetailPage() {
           const user = userRes.data;
           setUserName(`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email);
         } catch (err) {
-          // ignore user fetch errors
+          // noop
         }
       }
     } catch (error) {
-      toast.error("Failed to load order");
+      toast.error("Echec du chargement de la commande");
       router.back();
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) return <div className="pt-24">Loading order...</div>;
-  if (!order) return <div className="pt-24">Order not found</div>;
+  if (isLoading) return <div className="pt-24">Chargement de la commande...</div>;
+  if (!order) return <div className="pt-24">Commande introuvable</div>;
 
   const address = [
     order.shippingAddress,
@@ -62,44 +61,44 @@ export default function AdminOrderDetailPage() {
     <div className="pt-24 pb-20 min-h-screen">
       <div className="container-custom">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Order Details</h1>
-          <Link href="/admin/orders" className="text-sm text-primary-600 hover:underline">Back to Manage Orders</Link>
+          <h1 className="text-3xl font-bold">Details de la commande</h1>
+          <Link href="/admin/orders" className="text-sm text-primary-600 hover:underline">Retour a la liste</Link>
         </div>
 
         <div className="card p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h2 className="text-lg font-semibold mb-2">Order #{order.orderNumber || order.id}</h2>
-              <p className="text-sm text-gray-600 mb-4">Status: <span className="capitalize">{order.status}</span></p>
+              <h2 className="text-lg font-semibold mb-2">Commande #{order.orderNumber || order.id}</h2>
+              <p className="text-sm text-gray-600 mb-4">Statut: <span className="capitalize">{order.status}</span></p>
 
-              <h3 className="text-sm font-semibold">Submitted by</h3>
+              <h3 className="text-sm font-semibold">Client</h3>
               <p className="mb-4">{userName || order.email || order.customerEmail || "-"}</p>
 
               <h3 className="text-sm font-semibold">Email</h3>
               <p className="mb-4">{order.email || order.customerEmail || "-"}</p>
 
-              <h3 className="text-sm font-semibold">Phone</h3>
+              <h3 className="text-sm font-semibold">Telephone</h3>
               <p className="mb-4">{order.shippingPhone || "-"}</p>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold">Shipping Address</h3>
+              <h3 className="text-sm font-semibold">Adresse de livraison</h3>
               <p className="mb-4">{address || "-"}</p>
 
               <h3 className="text-sm font-semibold">Notes</h3>
               <p className="mb-4 text-sm text-gray-700">{order.notes || "-"}</p>
 
-              <h3 className="text-sm font-semibold">Subtotal</h3>
+              <h3 className="text-sm font-semibold">Sous-total</h3>
               <p className="mb-4">{order.subtotal?.toLocaleString() || 0} tnd</p>
 
-n              <h3 className="text-sm font-semibold">Total</h3>
+              <h3 className="text-sm font-semibold">Total</h3>
               <p className="mb-4">{order.total?.toLocaleString() || 0} tnd</p>
             </div>
           </div>
         </div>
 
         <div className="card p-6 mt-6">
-          <h2 className="text-lg font-semibold mb-4">Items</h2>
+          <h2 className="text-lg font-semibold mb-4">Articles</h2>
           {order.items && order.items.length > 0 ? (
             <ul className="space-y-3">
               {order.items.map((item: any) => (
@@ -107,16 +106,16 @@ n              <h3 className="text-sm font-semibold">Total</h3>
                   <div>
                     <div className="font-semibold">{item.productName || item.name || item.productId}</div>
                     {item.productSku && <div className="text-sm text-gray-500">SKU: {item.productSku}</div>}
+                    {item.variant && <div className="text-sm text-gray-500">Variante: {item.variant}</div>}
                   </div>
-                  <div className="text-sm">Qty: <span className="font-semibold">{item.quantity}</span></div>
+                  <div className="text-sm">Qt: <span className="font-semibold">{item.quantity}</span></div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-600">No items found for this order.</p>
+            <p className="text-sm text-gray-600">Aucun article trouve pour cette commande.</p>
           )}
-      
-      </div>
+        </div>
       </div>
     </div>
   );

@@ -5,18 +5,18 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
-import { Upload, X } from 'lucide-react'
+import { Upload, X, Plus } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
 const productSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  price: z.number().min(0, 'Price must be positive'),
+  name: z.string().min(3, 'Le nom doit contenir au moins 3 caracteres'),
+  description: z.string().min(10, 'La description doit contenir au moins 10 caracteres'),
+  price: z.number().min(0, 'Le prix doit etre positif'),
   sku: z.string().optional(),
-  category: z.enum(['Rings', 'Necklaces', 'Bracelets', 'Earrings', 'Pendants', 'Other']),
+  category: z.enum(['Bracelets', 'colliers', 'bague', 'series', 'manchettes', 'rangements', 'montres']),
   material: z.enum(['Gold', 'Silver', 'Platinum', 'Pearl', 'Diamond', 'Other']),
-  stock: z.number().min(0, 'Stock must be positive'),
+  stock: z.number().min(0, 'Le stock doit etre positif'),
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -92,6 +92,8 @@ const compressImageToDataUrl = async (file: File, maxBytes: number): Promise<str
 export default function NewProductPage() {
   const router = useRouter()
   const [images, setImages] = useState<string[]>([])
+  const [variants, setVariants] = useState<string[]>([])
+  const [variantInput, setVariantInput] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -117,15 +119,15 @@ export default function NewProductPage() {
         const imageBytes = estimateDataUrlSize(dataUrl)
 
         if (currentPayloadBytes + imageBytes > MAX_IMAGES_PAYLOAD_BYTES) {
-          toast.error(`Processed ${file.name}, but total image payload is still too large. Remove another image and retry.`)
+          toast.error(`Image ${file.name} traitee, mais la taille totale reste trop grande. Supprimez une autre image et reessayez.`)
           continue
         }
 
         newImages.push(dataUrl)
         currentPayloadBytes += imageBytes
       } catch (error) {
-        console.error('Error converting image:', error)
-        toast.error(`Failed to process ${file.name}`)
+        console.error('Erreur de conversion image:', error)
+        toast.error(`Echec du traitement de ${file.name}`)
       }
     }
     
@@ -136,20 +138,36 @@ export default function NewProductPage() {
     setImages(images.filter((_, i) => i !== index))
   }
 
+  const addVariant = () => {
+    const cleaned = variantInput.trim()
+    if (!cleaned) return
+    if (variants.some((variant) => variant.toLowerCase() === cleaned.toLowerCase())) {
+      toast.error('Cette variante existe deja')
+      return
+    }
+    setVariants([...variants, cleaned])
+    setVariantInput('')
+  }
+
+  const removeVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index))
+  }
+
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true)
     try {
       await api.post('/products', {
         ...data,
         images,
+        variants,
         isActive: true,
       })
-      toast.success('Product created successfully!')
+      toast.success('Produit cree avec succes !')
       // Dispatch event to refresh products on client side
       window.dispatchEvent(new Event('productsUpdated'))
       router.push('/admin/products')
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create product')
+      toast.error(error.response?.data?.message || 'Echec de creation du produit')
     } finally {
       setIsSubmitting(false)
     }
@@ -158,17 +176,17 @@ export default function NewProductPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom max-w-4xl">
-        <h1 className="text-4xl font-serif font-bold mb-8">Add New Product</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Ajouter un produit</h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="card p-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold mb-2">Product Name *</label>
+              <label className="block text-sm font-semibold mb-2">Nom du produit *</label>
               <input
                 type="text"
                 {...register('name')}
                 className="input-field"
-                placeholder="Diamond Solitaire Ring"
+                placeholder="Bague diamant solitaire"
               />
               {errors.name && (
                 <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>
@@ -177,13 +195,13 @@ export default function NewProductPage() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                SKU <span className="text-gray-500 text-xs">(optional - auto-generated if empty)</span>
+                SKU <span className="text-gray-500 text-xs">(optionnel - genere automatiquement si vide)</span>
               </label>
               <input
                 type="text"
                 {...register('sku')}
                 className="input-field"
-                placeholder="Leave empty to auto-generate"
+                placeholder="Laisser vide pour generation automatique"
               />
               {errors.sku && (
                 <p className="text-red-600 text-sm mt-1">{errors.sku.message}</p>
@@ -196,7 +214,7 @@ export default function NewProductPage() {
             <textarea
               {...register('description')}
               className="input-field min-h-[150px]"
-              placeholder="Product description..."
+              placeholder="Description du produit..."
             />
             {errors.description && (
               <p className="text-red-600 text-sm mt-1">{errors.description.message}</p>
@@ -205,7 +223,7 @@ export default function NewProductPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-semibold mb-2">Price *</label>
+              <label className="block text-sm font-semibold mb-2">Prix *</label>
               <input
                 type="number"
                 step="0.01"
@@ -219,15 +237,16 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-2">Category *</label>
+              <label className="block text-sm font-semibold mb-2">Categorie *</label>
               <select {...register('category')} className="input-field">
-                <option value="">Select category</option>
-                <option value="Rings">Rings</option>
-                <option value="Necklaces">Necklaces</option>
+                <option value="">Selectionner une categorie</option>
                 <option value="Bracelets">Bracelets</option>
-                <option value="Earrings">Earrings</option>
-                <option value="Pendants">Pendants</option>
-                <option value="Other">Other</option>
+                <option value="colliers">colliers</option>
+                <option value="bague">bague</option>
+                <option value="series">series</option>
+                <option value="manchettes">manchettes</option>
+                <option value="rangements">rangements</option>
+                <option value="montres">montres</option>
               </select>
               {errors.category && (
                 <p className="text-red-600 text-sm mt-1">{errors.category.message}</p>
@@ -235,15 +254,15 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-2">Material *</label>
+              <label className="block text-sm font-semibold mb-2">Matiere *</label>
               <select {...register('material')} className="input-field">
-                <option value="">Select material</option>
-                <option value="Gold">Gold</option>
-                <option value="Silver">Silver</option>
-                <option value="Platinum">Platinum</option>
-                <option value="Pearl">Pearl</option>
-                <option value="Diamond">Diamond</option>
-                <option value="Other">Other</option>
+                <option value="">Selectionner une matiere</option>
+                <option value="Gold">Or</option>
+                <option value="Silver">Argent</option>
+                <option value="Platinum">Platine</option>
+                <option value="Pearl">Perle</option>
+                <option value="Diamond">Diamant</option>
+                <option value="Other">Autre</option>
               </select>
               {errors.material && (
                 <p className="text-red-600 text-sm mt-1">{errors.material.message}</p>
@@ -252,7 +271,7 @@ export default function NewProductPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold mb-2">Stock Quantity *</label>
+            <label className="block text-sm font-semibold mb-2">Quantite en stock *</label>
             <input
               type="number"
               {...register('stock', { valueAsNumber: true })}
@@ -265,12 +284,59 @@ export default function NewProductPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold mb-2">Product Images</label>
+            <label className="block text-sm font-semibold mb-2">Variantes (optionnel)</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={variantInput}
+                onChange={(e) => setVariantInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addVariant()
+                  }
+                }}
+                className="input-field flex-1"
+                placeholder="Ex: noir, jaune, rouge..."
+              />
+              <button
+                type="button"
+                onClick={addVariant}
+                className="btn-outline flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter
+              </button>
+            </div>
+            {variants.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {variants.map((variant, index) => (
+                  <span
+                    key={`${variant}-${index}`}
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-700"
+                  >
+                    {variant}
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(index)}
+                      className="text-red-600 hover:text-red-700"
+                      aria-label={`Supprimer la variante ${variant}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-2">Images du produit</label>
             <div className="mt-2">
               <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                 <div className="text-center">
                   <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload images</p>
+                  <p className="text-sm text-gray-600">Cliquer pour televerser des images</p>
                 </div>
                 <input
                   type="file"
@@ -288,7 +354,7 @@ export default function NewProductPage() {
                   <div key={index} className="relative group">
                     <img
                       src={image}
-                      alt={`Product ${index + 1}`}
+                      alt={`Produit ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg"
                     />
                     <button
@@ -310,14 +376,14 @@ export default function NewProductPage() {
               disabled={isSubmitting}
               className="btn-primary flex-1 disabled:opacity-50"
             >
-              {isSubmitting ? 'Creating...' : 'Create Product'}
+              {isSubmitting ? 'Creation...' : 'Creer le produit'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
               className="btn-outline"
             >
-              Cancel
+              Annuler
             </button>
           </div>
         </form>

@@ -17,6 +17,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [selectedVariant, setSelectedVariant] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false)
   const addItem = useCartStore((state) => state.addItem)
@@ -33,12 +34,13 @@ export default function ProductDetailPage() {
         setProduct(response.data)
         // Reset selected image when product changes
         setSelectedImage(0)
+        setSelectedVariant('')
       } catch (error: any) {
         console.error('Failed to fetch product:', error)
         if (error.response?.status === 404) {
-          toast.error('Product not found')
+          toast.error('Produit introuvable')
         } else {
-          toast.error('Failed to load product')
+          toast.error('Echec du chargement du produit')
         }
       } finally {
         setIsLoading(false)
@@ -50,16 +52,26 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return
+
+    const variants = Array.isArray(product.variants)
+      ? product.variants.map((variant: string) => String(variant || '').trim()).filter(Boolean)
+      : []
+
+    if (variants.length > 0 && !selectedVariant) {
+      toast.error('Veuillez choisir une variante avant d ajouter au panier')
+      return
+    }
     
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.images?.[0] || product.image || '',
+        image: productImages[selectedImage] || product.images?.[0] || product.image || '',
+        variant: selectedVariant || undefined,
       })
     }
-    toast.success(`${quantity} item(s) added to cart!`)
+    toast.success(`${quantity} article(s) ajoute(s) au panier !`)
   }
 
   const handleShare = async () => {
@@ -69,7 +81,7 @@ export default function ProductDetailPage() {
       try {
         await navigator.share({
           title: product.name,
-          text: `Check out this beautiful ${product.name} on ZinoShop!`,
+          text: `Decouvrez ce magnifique ${product.name} sur ZinoShop !`,
           url: window.location.href,
         })
       } catch (err) {
@@ -77,7 +89,7 @@ export default function ProductDetailPage() {
       }
     } else {
       navigator.clipboard.writeText(window.location.href)
-      toast.success('Link copied to clipboard!')
+      toast.success('Lien copie !')
     }
   }
 
@@ -85,7 +97,7 @@ export default function ProductDetailPage() {
     if (!product) return
     
     if (!isAuthenticated) {
-      toast.error('Please login to add items to wishlist')
+      toast.error('Veuillez vous connecter pour ajouter a la liste de souhaits')
       router.push('/auth/login?redirect=/account/wishlist')
       return
     }
@@ -94,16 +106,16 @@ export default function ProductDetailPage() {
     try {
       const response = await api.post(`/wishlist/${product.id}`)
       console.log('Added to wishlist:', response.data)
-      toast.success('Added to wishlist!')
+      toast.success('Ajoute a la liste de souhaits !')
       // Dispatch custom event to refresh wishlist page if it's open
       window.dispatchEvent(new CustomEvent('wishlistUpdated'))
     } catch (error: any) {
       console.error('Wishlist add error:', error)
       if (error.response?.status === 401) {
-        toast.error('Please login to add items to wishlist')
+        toast.error('Veuillez vous connecter pour ajouter a la liste de souhaits')
         router.push('/auth/login?redirect=/account/wishlist')
       } else {
-        toast.error(error.response?.data?.message || 'Failed to add to wishlist')
+        toast.error(error.response?.data?.message || 'Echec de l ajout a la liste de souhaits')
       }
     } finally {
       setIsAddingToWishlist(false)
@@ -114,7 +126,7 @@ export default function ProductDetailPage() {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading product...</p>
+          <p className="text-gray-600">Chargement du produit...</p>
         </div>
       </div>
     )
@@ -124,9 +136,9 @@ export default function ProductDetailPage() {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Product not found</p>
+          <p className="text-gray-600 mb-4">Produit introuvable</p>
           <Link href="/products" className="btn-primary">
-            Back to Products
+            Retour aux produits
           </Link>
         </div>
       </div>
@@ -141,6 +153,9 @@ export default function ProductDetailPage() {
       : ['https://images.unsplash.com/photo-1603561596112-0a1325a55570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'] // Fallback image
 
   const inStock = product.stock > 0 && product.isActive !== false
+  const productVariants = Array.isArray(product.variants)
+    ? product.variants.map((variant: string) => String(variant || '').trim()).filter(Boolean)
+    : []
 
   return (
     <div className="pt-24 pb-20">
@@ -202,23 +217,53 @@ export default function ProductDetailPage() {
             {/* Product Details */}
             <div className="border-t border-b py-6 mb-6 space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Availability:</span>
+                <span className="text-gray-600">Disponibilite:</span>
                 <span
                   className={`font-semibold ${
                     inStock ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
                   {inStock
-                    ? `In Stock (${product.stock || 0} available)`
-                    : 'Out of Stock'}
+                    ? `En stock (${product.stock || 0} disponible)`
+                    : 'Rupture de stock'}
                 </span>
               </div>
             </div>
 
             {/* Quantity Selector */}
+            {productVariants.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold mb-2">
+                  Variante *
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {productVariants.map((variant: string) => (
+                    <button
+                      key={variant}
+                      type="button"
+                      onClick={() => setSelectedVariant(variant)}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        selectedVariant === variant
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {variant}
+                    </button>
+                  ))}
+                </div>
+                {!selectedVariant && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Choisissez une variante pour continuer.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Quantity Selector */}
             <div className="mb-6">
               <label className="block text-sm font-semibold mb-2">
-                Quantity
+                Quantite
               </label>
               <div className="flex items-center space-x-4">
                 <button
@@ -251,7 +296,7 @@ export default function ProductDetailPage() {
                 disabled={!inStock}
                 className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add to Cart
+                Ajouter au panier
               </button>
               <div className="flex gap-4">
                 <button
@@ -260,14 +305,14 @@ export default function ProductDetailPage() {
                   className="btn-outline flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Heart className={`w-5 h-5 ${isAddingToWishlist ? 'fill-primary-600 text-primary-600' : ''}`} />
-                  {isAddingToWishlist ? 'Adding...' : 'Wishlist'}
+                  {isAddingToWishlist ? 'Ajout...' : 'Liste de souhaits'}
                 </button>
                 <button
                   onClick={handleShare}
                   className="btn-outline flex-1 flex items-center justify-center gap-2"
                 >
                   <Share2 className="w-5 h-5" />
-                  Share
+                  Partager
                 </button>
               </div>
             </div>
@@ -276,13 +321,13 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-3 gap-4 pt-6 border-t">
               <div className="text-center">
                 <Truck className="w-8 h-8 text-primary-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold">Free Shipping</p>
-                <p className="text-xs text-gray-600">Delivery in 7 business days</p>
+                <p className="text-sm font-semibold">Livraison: 8 tnd</p>
+                <p className="text-xs text-gray-600">Livraison en 7 jours ouvrables</p>
               </div>
               <div className="text-center">
                 <Shield className="w-8 h-8 text-primary-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold">Secure Payment</p>
-                <p className="text-xs text-gray-600">100% Protected</p>
+                <p className="text-sm font-semibold">Paiement securise</p>
+                <p className="text-xs text-gray-600">100% protege</p>
               </div>
 
             </div>

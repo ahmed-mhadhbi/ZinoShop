@@ -67,8 +67,17 @@ export default function ProductsPage() {
     }
   }
 
-  const categories = ['all', 'Rings', 'Necklaces', 'Bracelets', 'Earrings', 'Pendants', 'Bags', 'Other']
+  const categories = ['all', 'Bracelets', 'colliers', 'bague', 'series', 'manchettes', 'rangements', 'montres']
   const materials = ['all', 'Gold', 'Silver', 'Platinum', 'Pearl', 'Diamond', 'Other']
+  const materialLabels: Record<string, string> = {
+    all: 'toutes',
+    Gold: 'Or',
+    Silver: 'Argent',
+    Platinum: 'Platine',
+    Pearl: 'Perle',
+    Diamond: 'Diamant',
+    Other: 'Autre',
+  }
 
   // Client-side sorting only (filtering is done server-side)
   const sortedProducts = [...products].sort((a, b) => {
@@ -107,10 +116,10 @@ export default function ProductsPage() {
           <div className="flex flex-col items-center justify-center text-center mb-10">
             <div className="flex items-center gap-2 text-primary-600 mb-2">
               <Sparkles className="w-5 h-5 animate-bounce" />
-              <p className="font-semibold">Loading beautiful pieces for you...</p>
+              <p className="font-semibold">Chargement des plus belles pieces pour vous...</p>
               <Sparkles className="w-5 h-5 animate-bounce [animation-delay:120ms]" />
             </div>
-            <p className="text-gray-600">Just a moment</p>
+            <p className="text-gray-600">Un instant...</p>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4">
@@ -136,10 +145,10 @@ export default function ProductsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-            Our Collection
+            Notre collection
           </h1>
           <p className="text-xl text-gray-600">
-            Discover our exquisite range of handcrafted jewelry
+            Decouvrez notre gamme de bijoux artisanaux
           </p>
         </div>
 
@@ -151,7 +160,7 @@ export default function ProductsPage() {
               className="btn-outline flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <Filter className="w-5 h-5" />
-              Filters
+              Filtres
             </button>
             <div className="flex items-center gap-2 border rounded-lg p-1 w-full sm:w-auto justify-center">
               <button
@@ -182,10 +191,10 @@ export default function ProductsPage() {
             onChange={(e) => setSortBy(e.target.value)}
             className="input-field w-full md:w-auto"
           >
-            <option value="newest">Newest</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="rating">Highest Rated</option>
+            <option value="newest">Plus recent</option>
+            <option value="price-low">Prix: croissant</option>
+            <option value="price-high">Prix: decroissant</option>
+            <option value="rating">Mieux notes</option>
           </select>
         </div>
 
@@ -200,7 +209,7 @@ export default function ProductsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Category
+                  Categorie
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((category) => (
@@ -213,14 +222,14 @@ export default function ProductsPage() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {category}
+                      {category === 'all' ? 'toutes' : category}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Material
+                  Matiere
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {materials.map((material) => (
@@ -233,7 +242,7 @@ export default function ProductsPage() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {material.charAt(0).toUpperCase() + material.slice(1)}
+                      {materialLabels[material] || material}
                     </button>
                   ))}
                 </div>
@@ -264,6 +273,7 @@ export default function ProductsPage() {
                   name: product.name,
                   price: product.price,
                   image: product.images?.[0] || product.image || '',
+                  variants: product.variants || [],
                   rating: product.rating || 0,
                   reviews: product.reviewCount || 0,
                   sku: product.sku,
@@ -276,7 +286,7 @@ export default function ProductsPage() {
         {sortedProducts.length === 0 && !isLoading && (
           <div className="text-center py-20">
             <p className="text-xl text-gray-600">
-              No products found matching your filters.
+              Aucun produit ne correspond a vos filtres.
             </p>
           </div>
         )}
@@ -289,17 +299,17 @@ export default function ProductsPage() {
               disabled={page === 1}
               className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              Precedent
             </button>
             <span className="text-gray-700">
-              Page {page} of {totalPages} ({total} total)
+              Page {page} sur {totalPages} ({total} au total)
             </span>
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
               className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              Suivant
             </button>
           </div>
         )}

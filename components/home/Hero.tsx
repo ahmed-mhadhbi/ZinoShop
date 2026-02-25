@@ -32,7 +32,7 @@ export default function Hero() {
             transition={{ delay: 0.2, duration: 0.8 }}
             className="text-5xl md:text-7xl font-serif font-bold mb-6"
           >
-            Timeless Elegance
+            Elegance Intemporelle
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -40,8 +40,8 @@ export default function Hero() {
             transition={{ delay: 0.4, duration: 0.8 }}
             className="text-xl md:text-2xl mb-8 text-gray-200 max-w-2xl mx-auto"
           >
-            Discover our exquisite collection of handcrafted jewelry, where
-            every piece tells a story of luxury and sophistication.
+            Decouvrez notre collection de bijoux artisanaux, ou
+            chaque piece raconte une histoire de luxe et de raffinement.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -53,14 +53,14 @@ export default function Hero() {
               href="/products"
               className="btn-primary inline-flex items-center justify-center group"
             >
-              Shop Now
+              Acheter maintenant
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/products"
               className="btn-secondary inline-flex items-center justify-center bg-white/10 backdrop-blur-sm border-white text-white hover:bg-white/20"
             >
-              Explore Products
+              Explorer les produits
             </Link>
           </motion.div>
         </motion.div>

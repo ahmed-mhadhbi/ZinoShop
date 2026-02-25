@@ -37,7 +37,7 @@ export default function AccountPage() {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -46,7 +46,7 @@ export default function AccountPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom max-w-6xl">
-        <h1 className="text-4xl font-serif font-bold mb-8">My Account</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Mon compte</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Sidebar */}
@@ -68,28 +68,28 @@ export default function AccountPage() {
                   className="flex items-center space-x-3 p-3 rounded-lg bg-primary-50 text-primary-600 font-semibold"
                 >
                   <User className="w-5 h-5" />
-                  <span>Profile</span>
+                  <span>Profil</span>
                 </Link>
                 <Link
                   href="/account/orders"
                   className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   <Package className="w-5 h-5" />
-                  <span>Orders</span>
+                  <span>Commandes</span>
                 </Link>
                 <Link
                   href="/account/wishlist"
                   className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   <Heart className="w-5 h-5" />
-                  <span>Wishlist</span>
+                  <span>Liste de souhaits</span>
                 </Link>
                 <Link
                   href="/account/settings"
                   className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   <Settings className="w-5 h-5" />
-                  <span>Settings</span>
+                  <span>Parametres</span>
                 </Link>
               </nav>
             </div>
@@ -98,13 +98,13 @@ export default function AccountPage() {
           {/* Main Content */}
           <div className="md:col-span-3">
             <div className="card p-8">
-              <h2 className="text-2xl font-semibold mb-6">Profile Information</h2>
+              <h2 className="text-2xl font-semibold mb-6">Informations du profil</h2>
 
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold mb-2">
-                      First Name
+                      Prenom
                     </label>
                     <input
                       type="text"
@@ -115,7 +115,7 @@ export default function AccountPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2">
-                      Last Name
+                      Nom
                     </label>
                     <input
                       type="text"
@@ -128,7 +128,7 @@ export default function AccountPage() {
 
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    Email Address
+                    Adresse e-mail
                   </label>
                   <input
                     type="email"
@@ -141,7 +141,7 @@ export default function AccountPage() {
                 {userData?.phone && (
                   <div>
                     <label className="block text-sm font-semibold mb-2">
-                      Phone Number
+                      Numero de telephone
                     </label>
                     <input
                       type="tel"
@@ -155,7 +155,7 @@ export default function AccountPage() {
                 {userData?.address && (
                   <div>
                     <label className="block text-sm font-semibold mb-2">
-                      Address
+                      Adresse
                     </label>
                     <input
                       type="text"
@@ -168,7 +168,7 @@ export default function AccountPage() {
 
                 <div className="pt-4">
                   <Link href="/account/settings" className="btn-primary">
-                    Edit Profile
+                    Modifier le profil
                   </Link>
                 </div>
               </div>
