@@ -20,12 +20,12 @@ export class FirestoreService {
   ): Promise<T> {
     const now = new Date();
     const docRef = this.db.collection(collection).doc();
-    const newData = {
+    const newData = this.sanitizeForFirestore({
       ...data,
       id: docRef.id,
       createdAt: admin.firestore.Timestamp.fromDate(now),
       updatedAt: admin.firestore.Timestamp.fromDate(now),
-    };
+    });
     await docRef.set(newData);
     return this.convertTimestamps(newData) as T;
   }
@@ -129,10 +129,10 @@ export class FirestoreService {
     data: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
     const docRef = this.db.collection(collection).doc(id);
-    const updateData = {
+    const updateData = this.sanitizeForFirestore({
       ...data,
       updatedAt: admin.firestore.Timestamp.fromDate(new Date()),
-    };
+    });
     await docRef.update(updateData);
     return this.findById<T>(collection, id) as Promise<T>;
   }
@@ -189,6 +189,27 @@ export class FirestoreService {
     }
 
     return converted;
+  }
+
+  private sanitizeForFirestore<T>(value: T): T {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.sanitizeForFirestore(item))
+        .filter((item) => item !== undefined) as T;
+    }
+
+    if (value && typeof value === 'object') {
+      const result: Record<string, any> = {};
+      Object.entries(value as Record<string, any>).forEach(([key, val]) => {
+        if (val === undefined) {
+          return;
+        }
+        result[key] = this.sanitizeForFirestore(val);
+      });
+      return result as T;
+    }
+
+    return value;
   }
 
   // Get collection reference for complex queries
