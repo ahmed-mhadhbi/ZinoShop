@@ -201,19 +201,6 @@ export default function ProductDetailPage() {
 
             {/* Product Details */}
             <div className="border-t border-b py-6 mb-6 space-y-3">
-              {product.material && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Material:</span>
-                  <span className="font-semibold">{product.material}</span>
-                </div>
-              )}
-              {product.category && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Category:</span>
-                  <span className="font-semibold">{product.category}</span>
-                </div>
-              )}
-
               <div className="flex justify-between">
                 <span className="text-gray-600">Availability:</span>
                 <span
