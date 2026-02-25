@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { FirestoreService } from '../firebase/firestore.service';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -26,16 +26,32 @@ export class ProductsService {
       throw new BadRequestException('Product name is required');
     }
 
-    const product = await this.firestoreService.create<Product>(this.collection, {
-      ...createProductDto,
-      name: createProductDto.name.trim(),
-      sku: createProductDto.sku.trim(),
-      stock: createProductDto.stock || 0,
-      inStock: (createProductDto.stock || 0) > 0,
-      isActive: createProductDto.isActive !== undefined ? createProductDto.isActive : true,
-      rating: 0,
-      reviewCount: 0,
-    });
+    let product: Product;
+    try {
+      product = await this.firestoreService.create<Product>(this.collection, {
+        ...createProductDto,
+        name: createProductDto.name.trim(),
+        sku: createProductDto.sku.trim(),
+        stock: createProductDto.stock || 0,
+        inStock: (createProductDto.stock || 0) > 0,
+        isActive: createProductDto.isActive !== undefined ? createProductDto.isActive : true,
+        rating: 0,
+        reviewCount: 0,
+      });
+    } catch (error: any) {
+      const message = error?.message || 'Unknown Firestore error';
+      console.error('Failed to create product:', message);
+
+      if (message.includes('maximum size') || message.includes('too large')) {
+        throw new BadRequestException('Product data is too large. Please use smaller images.');
+      }
+
+      if (message.includes('Cannot use "undefined" as a Firestore value')) {
+        throw new BadRequestException('Invalid product payload. Some fields are undefined.');
+      }
+
+      throw new InternalServerErrorException('Failed to create product');
+    }
 
     return product;
   }
