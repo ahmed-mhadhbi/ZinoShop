@@ -21,6 +21,74 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>
 
+const MAX_IMAGE_SIDE_PX = 1200
+const TARGET_IMAGE_BYTES = 220 * 1024
+const MAX_IMAGES_PAYLOAD_BYTES = 850 * 1024
+const MIN_QUALITY = 0.4
+const QUALITY_STEP = 0.1
+
+const estimateDataUrlSize = (dataUrl: string) => {
+  const base64 = dataUrl.split(',')[1] || ''
+  return Math.ceil((base64.length * 3) / 4)
+}
+
+const loadImageFromFile = (file: File): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Failed to decode image'))
+    }
+    img.src = objectUrl
+  })
+
+const compressImageToDataUrl = async (file: File, maxBytes: number): Promise<string> => {
+  const img = await loadImageFromFile(file)
+  const scale = Math.min(1, MAX_IMAGE_SIDE_PX / Math.max(img.width, img.height))
+  let width = Math.max(1, Math.round(img.width * scale))
+  let height = Math.max(1, Math.round(img.height * scale))
+
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Could not initialize canvas')
+
+  let bestDataUrl = ''
+  let bestSize = Number.POSITIVE_INFINITY
+  let pass = 0
+
+  while (pass < 5) {
+    canvas.width = width
+    canvas.height = height
+    ctx.clearRect(0, 0, width, height)
+    ctx.drawImage(img, 0, 0, width, height)
+
+    let quality = 0.9
+    while (quality >= MIN_QUALITY) {
+      const dataUrl = canvas.toDataURL('image/jpeg', quality)
+      const size = estimateDataUrlSize(dataUrl)
+      if (size < bestSize) {
+        bestDataUrl = dataUrl
+        bestSize = size
+      }
+      if (size <= maxBytes) {
+        return dataUrl
+      }
+      quality -= QUALITY_STEP
+    }
+
+    width = Math.max(1, Math.round(width * 0.85))
+    height = Math.max(1, Math.round(height * 0.85))
+    pass += 1
+  }
+
+  return bestDataUrl
+}
+
 export default function NewProductPage() {
   const router = useRouter()
   const [images, setImages] = useState<string[]>([])
@@ -39,24 +107,22 @@ export default function NewProductPage() {
     if (!files) return
 
     const newImages: string[] = []
+    let currentPayloadBytes = images.reduce((sum, image) => sum + estimateDataUrlSize(image), 0)
     
     for (const file of Array.from(files)) {
-      const reader = new FileReader()
-      const promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            resolve(reader.result)
-          } else {
-            reject(new Error('Failed to convert file to base64'))
-          }
-        }
-        reader.onerror = () => reject(new Error('Failed to read file'))
-        reader.readAsDataURL(file)
-      })
-
       try {
-        const dataUrl = await promise
+        const remainingBudget = Math.max(80 * 1024, MAX_IMAGES_PAYLOAD_BYTES - currentPayloadBytes)
+        const maxBytesForImage = Math.min(TARGET_IMAGE_BYTES, remainingBudget)
+        const dataUrl = await compressImageToDataUrl(file, maxBytesForImage)
+        const imageBytes = estimateDataUrlSize(dataUrl)
+
+        if (currentPayloadBytes + imageBytes > MAX_IMAGES_PAYLOAD_BYTES) {
+          toast.error(`Processed ${file.name}, but total image payload is still too large. Remove another image and retry.`)
+          continue
+        }
+
         newImages.push(dataUrl)
+        currentPayloadBytes += imageBytes
       } catch (error) {
         console.error('Error converting image:', error)
         toast.error(`Failed to process ${file.name}`)
