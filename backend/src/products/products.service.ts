@@ -49,6 +49,9 @@ export class ProductsService {
     page: number = 1,
     limit: number = 20,
   ): Promise<{ products: Product[]; total: number; page: number; limit: number; totalPages: number }> {
+    const validPage = page > 0 && Number.isFinite(page) ? Math.floor(page) : 1;
+    const validLimit = limit > 0 && Number.isFinite(limit) ? Math.floor(limit) : 20;
+
     const filters: Array<{ field: string; operator: any; value: any }> = [
       { field: 'isActive', operator: '==', value: true },
     ];
@@ -69,43 +72,74 @@ export class ProductsService {
       filters.push({ field: 'price', operator: '<=', value: maxPrice });
     }
 
-    // Get all products for filtering (needed for search and total count)
-    // Note: We don't use orderBy in Firestore query to avoid index requirements
-    // Instead, we'll sort in memory after fetching
+    const trimmedSearch = search?.trim();
+    const hasSearch = Boolean(trimmedSearch);
+
+    if (!hasSearch) {
+      try {
+        const { items, total } = await this.firestoreService.findPage<Product>(
+          this.collection,
+          filters,
+          validPage,
+          validLimit,
+          { field: 'createdAt', direction: 'desc' },
+        );
+        return {
+          products: items,
+          total,
+          page: validPage,
+          limit: validLimit,
+          totalPages: Math.ceil(total / validLimit),
+        };
+      } catch (error) {
+        // Fallback when the requested ordered query needs a missing composite index.
+        const { items, total } = await this.firestoreService.findPage<Product>(
+          this.collection,
+          filters,
+          validPage,
+          validLimit,
+        );
+        return {
+          products: items,
+          total,
+          page: validPage,
+          limit: validLimit,
+          totalPages: Math.ceil(total / validLimit),
+        };
+      }
+    }
+
+    // Search requires in-memory filtering because Firestore has no full-text search.
     let allProducts = await this.firestoreService.findAll<Product>(
       this.collection,
       filters,
-      undefined, // No orderBy to avoid index requirement
+      undefined,
     );
 
-    // Sort by createdAt descending (newest first) in memory
     allProducts.sort((a, b) => {
       const aDate = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
       const bDate = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-      return bDate - aDate; // Descending order (newest first)
+      return bDate - aDate;
     });
 
-    // Firestore doesn't support full-text search, so we filter in memory
-    if (search) {
-      const searchLower = search.toLowerCase();
-      allProducts = allProducts.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchLower) ||
-          product.description.toLowerCase().includes(searchLower),
-      );
-    }
+    const searchLower = trimmedSearch!.toLowerCase();
+    allProducts = allProducts.filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchLower) ||
+        product.description.toLowerCase().includes(searchLower),
+    );
 
     const total = allProducts.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
+    const totalPages = Math.ceil(total / validLimit);
+    const startIndex = (validPage - 1) * validLimit;
+    const endIndex = startIndex + validLimit;
     const products = allProducts.slice(startIndex, endIndex);
 
     return {
       products,
       total,
-      page,
-      limit,
+      page: validPage,
+      limit: validLimit,
       totalPages,
     };
   }
