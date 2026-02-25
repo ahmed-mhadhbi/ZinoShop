@@ -23,7 +23,7 @@ export default function ProductsPage() {
     
     // Listen for custom event to refresh products (only when needed)
     const handleProductsUpdate = () => {
-      fetchProducts()
+      fetchProducts(true)
     }
     
     window.addEventListener('productsUpdated', handleProductsUpdate)
@@ -33,7 +33,7 @@ export default function ProductsPage() {
     }
   }, [selectedCategory, selectedMaterial, page])
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (forceRefresh: boolean = false) => {
     try {
       setIsLoading(true)
       const params = new URLSearchParams()
@@ -41,8 +41,10 @@ export default function ProductsPage() {
       if (selectedMaterial !== 'all') params.append('material', selectedMaterial)
       params.append('page', page.toString())
       params.append('limit', '20')
-      // Add cache-busting when products are updated
-      params.append('_t', Date.now().toString())
+      // Use cache-busting only when a product update event explicitly requests fresh data.
+      if (forceRefresh) {
+        params.append('_t', Date.now().toString())
+      }
       
       const response = await api.get(`/products?${params.toString()}`)
       const data = response.data

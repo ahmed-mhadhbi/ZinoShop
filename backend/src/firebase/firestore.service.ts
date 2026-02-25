@@ -78,6 +78,51 @@ export class FirestoreService {
     ) as T[];
   }
 
+  async findPage<T>(
+    collection: string,
+    filters?: Array<{ field: string; operator: any; value: any }>,
+    page: number = 1,
+    limit: number = 20,
+    orderBy?: { field: string; direction: 'asc' | 'desc' },
+  ): Promise<{ items: T[]; total: number }> {
+    let query: admin.firestore.Query = this.db.collection(collection);
+
+    if (filters) {
+      filters.forEach((filter) => {
+        if (
+          (filter.operator === '>' ||
+            filter.operator === '<' ||
+            filter.operator === '>=' ||
+            filter.operator === '<=') &&
+          (isNaN(filter.value) || !isFinite(filter.value))
+        ) {
+          throw new Error(
+            `Invalid filter value for field "${filter.field}": cannot use ${filter.operator} operator with NaN or infinite value`,
+          );
+        }
+        query = query.where(filter.field, filter.operator, filter.value);
+      });
+    }
+
+    const countSnapshot = await query.count().get();
+    const total = countSnapshot.data().count;
+
+    if (orderBy) {
+      query = query.orderBy(orderBy.field, orderBy.direction);
+    }
+
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 20;
+    const offset = (safePage - 1) * safeLimit;
+
+    const snapshot = await query.offset(offset).limit(safeLimit).get();
+    const items = snapshot.docs.map((doc) =>
+      this.convertTimestamps({ id: doc.id, ...doc.data() }),
+    ) as T[];
+
+    return { items, total };
+  }
+
   async update<T>(
     collection: string,
     id: string,
