@@ -1,11 +1,12 @@
 // Plain TypeScript class for Product (Firebase/Firestore compatible)
 export enum ProductCategory {
-  RINGS = 'Rings',
-  NECKLACES = 'Necklaces',
   BRACELETS = 'Bracelets',
-  EARRINGS = 'Earrings',
-  PENDANTS = 'Pendants',
-  OTHER = 'Other',
+  COLLIERS = 'colliers',
+  BAGUE = 'bague',
+  SERIES = 'series',
+  MANCHETTES = 'manchettes',
+  RANGEMENTS = 'rangements',
+  MONTRES = 'montres',
 }
 
 export enum ProductMaterial {
@@ -27,6 +28,7 @@ export class Product {
   category: ProductCategory;
   material: ProductMaterial;
   images?: string[];
+  variants?: string[];
   stock: number;
   inStock: boolean;
   rating?: number;

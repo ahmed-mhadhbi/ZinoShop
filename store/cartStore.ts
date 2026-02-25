@@ -8,13 +8,14 @@ export interface CartItem {
   image: string
   quantity: number
   sku?: string
+  variant?: string
 }
 
 interface CartStore {
   items: CartItem[]
   addItem: (item: Omit<CartItem, 'quantity'>) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
+  removeItem: (id: string, variant?: string) => void
+  updateQuantity: (id: string, quantity: number, variant?: string) => void
   clearCart: () => void
   getTotal: () => number
   getItemCount: () => number
@@ -26,12 +27,14 @@ export const useCartStore = create<CartStore>()(
       items: [],
       addItem: (item) => {
         const items = get().items
-        const existingItem = items.find((i) => i.id === item.id)
+        const existingItem = items.find(
+          (i) => i.id === item.id && (i.variant || '') === (item.variant || '')
+        )
 
         if (existingItem) {
           set({
             items: items.map((i) =>
-              i.id === item.id
+              i.id === item.id && (i.variant || '') === (item.variant || '')
                 ? { ...i, quantity: i.quantity + 1 }
                 : i
             ),
@@ -40,17 +43,23 @@ export const useCartStore = create<CartStore>()(
           set({ items: [...items, { ...item, quantity: 1 }] })
         }
       },
-      removeItem: (id) => {
-        set({ items: get().items.filter((item) => item.id !== id) })
+      removeItem: (id, variant) => {
+        set({
+          items: get().items.filter(
+            (item) => !(item.id === id && (item.variant || '') === (variant || ''))
+          ),
+        })
       },
-      updateQuantity: (id, quantity) => {
+      updateQuantity: (id, quantity, variant) => {
         if (quantity <= 0) {
-          get().removeItem(id)
+          get().removeItem(id, variant)
           return
         }
         set({
           items: get().items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
+            item.id === id && (item.variant || '') === (variant || '')
+              ? { ...item, quantity }
+              : item
           ),
         })
       },

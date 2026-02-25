@@ -19,7 +19,7 @@ export default function WishlistRedirectPage() {
   return (
     <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <p className="text-gray-600">Redirecting to wishlist...</p>
+        <p className="text-gray-600">Redirection vers la liste de souhaits...</p>
       </div>
     </div>
   )

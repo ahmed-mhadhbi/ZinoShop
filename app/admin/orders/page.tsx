@@ -5,11 +5,11 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 
 const statusOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "on_the_way", label: "On the Way" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "pending", label: "En attente" },
+  { value: "processing", label: "En cours" },
+  { value: "on_the_way", label: "En livraison" },
+  { value: "delivered", label: "Livree" },
+  { value: "cancelled", label: "Annulee" },
 ];
 
 export default function AdminOrdersPage() {
@@ -19,7 +19,6 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    // Optionally, listen for events to re-fetch orders
     const onOrderChanged = () => fetchOrders();
     window.addEventListener("ordersUpdated", onOrderChanged);
     return () => window.removeEventListener("ordersUpdated", onOrderChanged);
@@ -31,7 +30,7 @@ export default function AdminOrdersPage() {
       const res = await api.get("/orders?limit=100&includeItems=false&_t=" + Date.now());
       setOrders(Array.isArray(res.data) ? res.data : res.data.orders || []);
     } catch (error) {
-      toast.error("Failed to load orders");
+      toast.error("Echec du chargement des commandes");
       setOrders([]);
     } finally {
       setIsLoading(false);
@@ -42,10 +41,10 @@ export default function AdminOrdersPage() {
     setUpdatingId(orderId);
     try {
       await api.patch(`/orders/${orderId}`, { status: newStatus });
-      toast.success("Status updated");
+      toast.success("Statut mis a jour");
       fetchOrders();
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error("Echec de mise a jour du statut");
     } finally {
       setUpdatingId(null);
     }
@@ -54,23 +53,23 @@ export default function AdminOrdersPage() {
   return (
     <div className="pt-24 pb-20 min-h-screen">
       <div className="container-custom">
-        <h1 className="text-4xl font-bold mb-8">Manage Orders</h1>
+        <h1 className="text-4xl font-bold mb-8">Gerer les commandes</h1>
         {isLoading ? (
-          <div>Loading orders...</div>
+          <div>Chargement des commandes...</div>
         ) : orders.length === 0 ? (
-          <div>No orders found.</div>
+          <div>Aucune commande trouvee.</div>
         ) : (
           <div className="card p-6 overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="px-4 py-2">Order #</th>
-                  <th className="px-4 py-2">User</th>
+                  <th className="px-4 py-2">Commande #</th>
+                  <th className="px-4 py-2">Utilisateur</th>
                   <th className="px-4 py-2">Email</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Subtotal</th>
-                  <th className="px-4 py-2">Created</th>
-                  <th className="px-4 py-2">Update Status</th>
+                  <th className="px-4 py-2">Statut</th>
+                  <th className="px-4 py-2">Sous-total</th>
+                  <th className="px-4 py-2">Creee le</th>
+                  <th className="px-4 py-2">Mettre a jour</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,4 +107,3 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
-

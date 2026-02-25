@@ -54,13 +54,13 @@ export default function Navbar() {
               href="/products"
               className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
-              Products
+              Produits
             </Link>
             <Link
               href="/about"
               className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
-              About
+              A propos
             </Link>
             <Link
               href="/contact"
@@ -75,7 +75,7 @@ export default function Navbar() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Rechercher..."
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-48 lg:w-64"
               />
             </div>
@@ -103,8 +103,8 @@ export default function Navbar() {
             <Link
               href={accountHref}
               className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
-              aria-label={isAuthenticated ? 'Account' : 'Log In'}
-              title={isAuthenticated ? 'Account' : 'Log In'}
+              aria-label={isAuthenticated ? 'Compte' : 'Connexion'}
+              title={isAuthenticated ? 'Compte' : 'Connexion'}
             >
               <User className="w-6 h-6" />
             </Link>
@@ -133,14 +133,14 @@ export default function Navbar() {
                 className="block text-gray-700 hover:text-primary-600 font-medium"
                 onClick={() => setIsOpen(false)}
               >
-                Products
+                Produits
               </Link>
               <Link
                 href="/about"
                 className="block text-gray-700 hover:text-primary-600 font-medium"
                 onClick={() => setIsOpen(false)}
               >
-                About
+                A propos
               </Link>
               <Link
                 href="/contact"
@@ -155,21 +155,21 @@ export default function Navbar() {
                   className="block text-gray-700 hover:text-primary-600 font-medium"
                   onClick={() => setIsOpen(false)}
                 >
-                  Wishlist
+                  Favoris
                 </Link>
                 <Link
                   href="/cart"
                   className="block text-gray-700 hover:text-primary-600 font-medium"
                   onClick={() => setIsOpen(false)}
                 >
-                  Cart ({cartCount})
+                  Panier ({cartCount})
                 </Link>
                 <Link
                   href={accountHref}
                   className={`block text-center font-medium ${isAuthenticated ? 'text-gray-700 hover:text-primary-600' : 'btn-primary'}`}
                   onClick={() => setIsOpen(false)}
                 >
-                  {isAuthenticated ? 'Account' : 'Log In'}
+                  {isAuthenticated ? 'Compte' : 'Connexion'}
                 </Link>
               </div>
             </div>

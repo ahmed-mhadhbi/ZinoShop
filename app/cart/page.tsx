@@ -11,24 +11,23 @@ export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotal, clearCart } =
     useCartStore()
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
+  const handleUpdateQuantity = (id: string, quantity: number, variant?: string) => {
     if (quantity <= 0) {
-      removeItem(id)
-      toast.success('Item removed from cart')
+      removeItem(id, variant)
+      toast.success('Article retire du panier')
     } else {
-      updateQuantity(id, quantity)
+      updateQuantity(id, quantity, variant)
     }
   }
 
-  const handleRemoveItem = (id: string) => {
-    removeItem(id)
-    toast.success('Item removed from cart')
+  const handleRemoveItem = (id: string, variant?: string) => {
+    removeItem(id, variant)
+    toast.success('Article retire du panier')
   }
 
   const total = getTotal()
-  // Shipping is free site-wide
-  const shipping: number = 0
-  const finalTotal = total
+  const shipping: number = 8
+  const finalTotal = total + shipping
 
   if (items.length === 0) {
     return (
@@ -36,13 +35,13 @@ export default function CartPage() {
         <div className="text-center">
           <ShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-6" />
           <h2 className="text-3xl font-serif font-bold mb-4">
-            Your cart is empty
+            Votre panier est vide
           </h2>
           <p className="text-gray-600 mb-8">
-            Looks like you haven't added anything to your cart yet.
+            Vous n avez encore ajoute aucun article.
           </p>
           <Link href="/products" className="btn-primary">
-            Continue Shopping
+            Continuer vos achats
           </Link>
         </div>
       </div>
@@ -52,14 +51,14 @@ export default function CartPage() {
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom">
-        <h1 className="text-4xl font-serif font-bold mb-8">Shopping Cart</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Panier</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {items.map((item, index) => (
               <motion.div
-                key={item.id}
+                key={`${item.id}-${item.variant || 'sans-variante'}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -77,6 +76,9 @@ export default function CartPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
+                    {item.variant && (
+                      <p className="text-sm text-gray-600 mb-1">Variante: {item.variant}</p>
+                    )}
                     {item.sku && (
                       <p className="text-sm text-gray-500 mb-4">SKU: {item.sku}</p>
                     )}
@@ -84,7 +86,7 @@ export default function CartPage() {
                       <div className="flex items-center space-x-4">
                         <button
                           onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity - 1)
+                            handleUpdateQuantity(item.id, item.quantity - 1, item.variant)
                           }
                           className="p-1 border rounded hover:bg-gray-50"
                         >
@@ -95,7 +97,7 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity + 1)
+                            handleUpdateQuantity(item.id, item.quantity + 1, item.variant)
                           }
                           className="p-1 border rounded hover:bg-gray-50"
                         >
@@ -107,7 +109,7 @@ export default function CartPage() {
                           {(item.price * item.quantity).toLocaleString()} tnd
                         </span>
                         <button
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={() => handleRemoveItem(item.id, item.variant)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -122,11 +124,11 @@ export default function CartPage() {
             <button
               onClick={() => {
                 clearCart()
-                toast.success('Cart cleared')
+                toast.success('Panier vide')
               }}
               className="text-red-600 hover:text-red-700 font-semibold"
             >
-              Clear Cart
+              Vider le panier
             </button>
           </div>
 
@@ -134,24 +136,18 @@ export default function CartPage() {
           <div className="lg:col-span-1">
             <div className="card p-6 sticky top-24">
               <h2 className="text-2xl font-serif font-bold mb-6">
-                Order Summary
+                Resume de commande
               </h2>
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">Sous-total</span>
                   <span className="font-semibold">
                     {total.toLocaleString()} tnd
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="font-semibold">
-                    {shipping === 0 ? (
-                      <span className="text-green-600">Free</span>
-                    ) : (
-                      `${shipping.toLocaleString()} tnd`
-                    )}
-                  </span>
+                  <span className="text-gray-600">Livraison</span>
+                  <span className="font-semibold">{shipping.toLocaleString()} tnd</span>
                 </div>
 
                 <div className="border-t pt-4">
@@ -167,13 +163,13 @@ export default function CartPage() {
                 href="/checkout"
                 className="btn-primary w-full text-center block mb-4"
               >
-                Proceed to Checkout
+                Passer au paiement
               </Link>
               <Link
                 href="/products"
                 className="btn-outline w-full text-center block"
               >
-                Continue Shopping
+                Continuer vos achats
               </Link>
             </div>
           </div>

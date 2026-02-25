@@ -11,10 +11,10 @@ import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
 const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  firstName: z.string().min(2, 'First name is required'),
-  lastName: z.string().min(2, 'Last name is required'),
+  email: z.string().email('Adresse email invalide'),
+  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caracteres'),
+  firstName: z.string().min(2, 'Le prenom est obligatoire'),
+  lastName: z.string().min(2, 'Le nom est obligatoire'),
 })
 
 type RegisterFormData = z.infer<typeof registerSchema>
@@ -37,10 +37,10 @@ export default function RegisterPage() {
     try {
       const response = await api.post('/auth/register', data)
       login(response.data.user, response.data.token)
-      toast.success('Account created successfully!')
+      toast.success('Compte cree avec succes !')
       router.push('/')
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed')
+      toast.error(error.response?.data?.message || 'Echec de l inscription')
     } finally {
       setIsLoading(false)
     }
@@ -51,14 +51,14 @@ export default function RegisterPage() {
       <div className="max-w-md w-full">
         <div className="card p-8">
           <h1 className="text-3xl font-serif font-bold mb-6 text-center">
-            Create Account
+            Creer un compte
           </h1>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  First Name
+                  Prenom
                 </label>
                 <input
                   type="text"
@@ -74,7 +74,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Last Name
+                  Nom
                 </label>
                 <input
                   type="text"
@@ -92,7 +92,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Email Address
+                Adresse e-mail
               </label>
               <input
                 type="email"
@@ -107,7 +107,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Password
+                Mot de passe
               </label>
               <input
                 type="password"
@@ -127,18 +127,18 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="btn-primary w-full py-4 disabled:opacity-50"
             >
-              {isLoading ? 'Creating account...' : 'Create Account'}
+              {isLoading ? 'Creation du compte...' : 'Creer le compte'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Already have an account?{' '}
+              Vous avez deja un compte ?{' '}
               <Link
                 href="/auth/login"
                 className="text-primary-600 hover:text-primary-700 font-semibold"
               >
-                Sign in
+                Se connecter
               </Link>
             </p>
           </div>

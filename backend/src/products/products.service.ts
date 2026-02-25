@@ -26,12 +26,17 @@ export class ProductsService {
       throw new BadRequestException('Product name is required');
     }
 
+    const normalizedVariants = (createProductDto.variants || [])
+      .map((variant) => String(variant || '').trim())
+      .filter((variant) => variant.length > 0);
+
     let product: Product;
     try {
       product = await this.firestoreService.create<Product>(this.collection, {
         ...createProductDto,
         name: createProductDto.name.trim(),
         sku: createProductDto.sku.trim(),
+        variants: Array.from(new Set(normalizedVariants)),
         stock: createProductDto.stock || 0,
         inStock: (createProductDto.stock || 0) > 0,
         isActive: createProductDto.isActive !== undefined ? createProductDto.isActive : true,
@@ -186,7 +191,17 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return this.firestoreService.update<Product>(this.collection, id, updateProductDto);
+    const normalizedUpdate: UpdateProductDto = { ...updateProductDto };
+    if (Array.isArray(updateProductDto.variants)) {
+      normalizedUpdate.variants = Array.from(
+        new Set(
+          updateProductDto.variants
+            .map((variant) => String(variant || '').trim())
+            .filter((variant) => variant.length > 0),
+        ),
+      );
+    }
+    return this.firestoreService.update<Product>(this.collection, id, normalizedUpdate);
   }
 
   async remove(id: string): Promise<void> {

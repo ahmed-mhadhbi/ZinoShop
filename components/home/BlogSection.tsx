@@ -7,27 +7,27 @@ import { ArrowRight, Calendar } from 'lucide-react'
 const blogPosts = [
   {
     id: 1,
-    title: 'How to Care for Your Jewelry',
+    title: 'Comment entretenir vos bijoux',
     excerpt:
-      'Learn essential tips to keep your precious jewelry looking as beautiful as the day you bought it.',
+      'Conseils essentiels pour garder vos bijoux aussi beaux qu au premier jour.',
     image:
       'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     date: '2024-01-15',
   },
   {
     id: 2,
-    title: 'Trending Jewelry Styles for 2024',
+    title: 'Tendances bijoux 2024',
     excerpt:
-      'Discover the latest jewelry trends that will make you stand out this year.',
+      'Decouvrez les styles bijoux les plus tendance cette annee.',
     image:
       'https://images.unsplash.com/photo-1603561596112-0a1325a55570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     date: '2024-01-10',
   },
   {
     id: 3,
-    title: 'Choosing the Perfect Engagement Ring',
+    title: 'Choisir la bague de fiancailles parfaite',
     excerpt:
-      'A comprehensive guide to help you find the perfect engagement ring for your special moment.',
+      'Un guide complet pour trouver la bague ideale pour votre moment special.',
     image:
       'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     date: '2024-01-05',
@@ -46,10 +46,10 @@ export default function BlogSection() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-            Style & Care Tips
+            Conseils style et entretien
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover expert advice on jewelry care, styling, and trends
+            Decouvrez des conseils experts sur l entretien et le style
           </p>
         </motion.div>
 
@@ -76,7 +76,7 @@ export default function BlogSection() {
               <div className="p-6">
                 <div className="flex items-center text-sm text-gray-500 mb-3">
                   <Calendar className="w-4 h-4 mr-2" />
-                  {new Date(post.date).toLocaleDateString('en-US', {
+                  {new Date(post.date).toLocaleDateString('fr-FR', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -92,7 +92,7 @@ export default function BlogSection() {
                   href={`/blog/${post.id}`}
                   className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 group/link"
                 >
-                  Read More
+                  Lire plus
                   <ArrowRight className="ml-2 w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -108,7 +108,7 @@ export default function BlogSection() {
           className="text-center mt-12"
         >
           <Link href="/blog" className="btn-primary inline-flex items-center">
-            View All Posts
+            Voir tous les articles
           </Link>
         </motion.div>
       </div>

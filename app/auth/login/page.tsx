@@ -11,8 +11,8 @@ import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Adresse email invalide'),
+  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caracteres'),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -36,7 +36,7 @@ export default function LoginPage() {
       const response = await api.post('/auth/login', data)
       console.log('Login response:', response.data) // Debug log
       login(response.data.user, response.data.token)
-      toast.success('Welcome back!')
+      toast.success('Bon retour !')
       
       // Check for redirect parameter or redirect based on user role
       const urlParams = new URLSearchParams(window.location.search)
@@ -53,7 +53,7 @@ export default function LoginPage() {
         router.push('/')
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed')
+      toast.error(error.response?.data?.message || 'Echec de connexion')
     } finally {
       setIsLoading(false)
     }
@@ -64,13 +64,13 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         <div className="card p-8">
           <h1 className="text-3xl font-serif font-bold mb-6 text-center">
-            Sign In
+            Connexion
           </h1>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Email Address
+                Adresse e-mail
               </label>
               <input
                 type="email"
@@ -85,7 +85,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Password
+                Mot de passe
               </label>
               <input
                 type="password"
@@ -103,13 +103,13 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <label className="flex items-center">
                 <input type="checkbox" className="mr-2" />
-                <span className="text-sm text-gray-600">Remember me</span>
+                <span className="text-sm text-gray-600">Se souvenir de moi</span>
               </label>
               <Link
                 href="/auth/forgot-password"
                 className="text-sm text-primary-600 hover:text-primary-700"
               >
-                Forgot password?
+                Mot de passe oublie ?
               </Link>
             </div>
 
@@ -118,18 +118,18 @@ export default function LoginPage() {
               disabled={isLoading}
               className="btn-primary w-full py-4 disabled:opacity-50"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Don't have an account?{' '}
+              Vous n avez pas de compte ?{' '}
               <Link
                 href="/auth/register"
                 className="text-primary-600 hover:text-primary-700 font-semibold"
               >
-                Sign up
+                S inscrire
               </Link>
             </p>
           </div>

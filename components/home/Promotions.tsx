@@ -28,16 +28,16 @@ export default function Promotions() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             <div className="relative h-full flex flex-col justify-end p-8 text-white">
               <h3 className="text-3xl font-serif font-bold mb-2">
-                New Collection
+                Nouvelle collection
               </h3>
               <p className="text-lg mb-4 text-gray-200">
-                Discover our latest designs
+                Decouvrez nos dernieres creations
               </p>
               <Link
                 href="/products"
                 className="inline-flex items-center text-white font-semibold hover:text-gold-300 transition-colors group/link"
               >
-                Shop Now
+                Acheter maintenant
                 <ArrowRight className="ml-2 w-5 h-5 group-hover/link:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -61,13 +61,13 @@ export default function Promotions() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             <div className="relative h-full flex flex-col justify-end p-8 text-white">
               <h3 className="text-3xl font-serif font-bold mb-2">
-                Special Offer
+                Offre speciale
               </h3>
               <p className="text-lg mb-4 text-gray-200">
-                Up to 30% off on selected items
+                Jusqu a 30% de reduction sur une selection
               </p>
               <span className="inline-flex items-center text-white font-semibold opacity-80 cursor-default">
-                Soon
+                Bientot
               </span>
             </div>
           </motion.div>

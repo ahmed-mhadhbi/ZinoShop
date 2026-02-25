@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -79,10 +79,10 @@ export default function AdminDashboard() {
     <div className="pt-24 pb-20">
       <div className="container-custom">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold">Tableau de bord admin</h1>
           <Link href="/admin/products/new" className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
             <Plus className="w-5 h-5" />
-            Add Product
+            Ajouter un produit
           </Link>
         </div>
 
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Total Products</p>
+                <p className="text-gray-600 text-sm mb-1">Total produits</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {stats.totalProducts}
                 </p>
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Total Orders</p>
+                <p className="text-gray-600 text-sm mb-1">Total commandes</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {stats.totalOrders}
                 </p>
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Total Users</p>
+                <p className="text-gray-600 text-sm mb-1">Total utilisateurs</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {stats.totalUsers}
                 </p>
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Total Revenue</p>
+                <p className="text-gray-600 text-sm mb-1">Chiffre d affaires</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {stats.totalRevenue.toLocaleString()} tnd
                 </p>
@@ -148,14 +148,14 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <div className="card p-6">
-            <h2 className="text-2xl font-semibold mb-4">Quick Actions</h2>
+            <h2 className="text-2xl font-semibold mb-4">Actions rapides</h2>
             <div className="space-y-3">
               <Link
                 href="/admin/products"
                 className="block p-4 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">Manage Products</span>
+                  <span className="font-semibold">Gerer les produits</span>
                   <Package className="w-5 h-5 text-gray-400" />
                 </div>
               </Link>
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
                 className="block p-4 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">Manage Orders</span>
+                  <span className="font-semibold">Gerer les commandes</span>
                   <ShoppingCart className="w-5 h-5 text-gray-400" />
                 </div>
               </Link>
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
                 className="block p-4 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">Manage Users</span>
+                  <span className="font-semibold">Gerer les utilisateurs</span>
                   <Users className="w-5 h-5 text-gray-400" />
                 </div>
               </Link>
@@ -181,9 +181,9 @@ export default function AdminDashboard() {
           </div>
 
           <div className="card p-6">
-            <h2 className="text-2xl font-semibold mb-4">Recent Orders</h2>
+            <h2 className="text-2xl font-semibold mb-4">Commandes recentes</h2>
             {recentOrders.length === 0 ? (
-              <p className="text-gray-600">No recent orders</p>
+              <p className="text-gray-600">Aucune commande recente</p>
             ) : (
               <div className="space-y-3">
                 {recentOrders.map((order) => (
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold">Order #{order.orderNumber}</p>
+                        <p className="font-semibold">Commande #{order.orderNumber}</p>
                         <p className="text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </p>

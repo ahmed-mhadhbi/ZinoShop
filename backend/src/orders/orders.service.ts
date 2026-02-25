@@ -61,6 +61,22 @@ export class OrdersService {
             ? String(product.sku).trim() 
             : `SKU-${product.id.substring(0, 8).toUpperCase()}`;
           const productPrice = Number(product.price) || 0;
+          const availableVariants = Array.isArray(product.variants)
+            ? product.variants.map((variant) => String(variant || '').trim()).filter(Boolean)
+            : [];
+          const selectedVariant = item.variant ? String(item.variant).trim() : undefined;
+
+          if (availableVariants.length > 0 && !selectedVariant) {
+            throw new BadRequestException(
+              `La variante est obligatoire pour le produit "${productName}".`,
+            );
+          }
+
+          if (selectedVariant && availableVariants.length > 0 && !availableVariants.includes(selectedVariant)) {
+            throw new BadRequestException(
+              `Variante invalide "${selectedVariant}" pour le produit "${productName}".`,
+            );
+          }
 
           const itemTotal = productPrice * item.quantity;
           subtotal += itemTotal;
@@ -71,6 +87,7 @@ export class OrdersService {
             productId: String(item.productId),
             productName,
             productSku,
+            variant: selectedVariant,
             price: productPrice,
             quantity: Number(item.quantity),
             createdAt: new Date(),
@@ -84,13 +101,14 @@ export class OrdersService {
       }
 
       const { items, ...dtoWithoutItems } = createOrderDto;
+const shippingFee = 8;
 const orderData = {
   ...dtoWithoutItems,
   userId,
   orderNumber: this.generateOrderNumber(),
   subtotal,
-  shipping: createOrderDto.shipping || 0,
-  total: subtotal + (createOrderDto.shipping || 0),
+  shipping: shippingFee,
+  total: subtotal + shippingFee,
   status: OrderStatus.PENDING,
   paymentStatus: PaymentStatus.PENDING,
 };
