@@ -93,12 +93,22 @@ export class ProductsService {
         };
       } catch (error) {
         // Fallback when the requested ordered query needs a missing composite index.
-        const { items, total } = await this.firestoreService.findPage<Product>(
+        // Keep "newest first" behavior by sorting in memory.
+        const allProducts = await this.firestoreService.findAll<Product>(
           this.collection,
           filters,
-          validPage,
-          validLimit,
         );
+        allProducts.sort((a, b) => {
+          const aDate = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+          const bDate = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+          return bDate - aDate;
+        });
+
+        const total = allProducts.length;
+        const startIndex = (validPage - 1) * validLimit;
+        const endIndex = startIndex + validLimit;
+        const items = allProducts.slice(startIndex, endIndex);
+
         return {
           products: items,
           total,
