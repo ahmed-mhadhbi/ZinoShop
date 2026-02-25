@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation'
 import { Upload, X } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
-import { uploadToCloudinary } from '@/lib/cloudinary'
 
 const productSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -39,24 +38,28 @@ export default function NewProductPage() {
     const files = e.target.files
     if (!files) return
 
-    const hasCloudinaryConfig =
-      Boolean(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) &&
-      Boolean(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)
-
-    if (!hasCloudinaryConfig) {
-      toast.error('Image upload is not configured. Please set Cloudinary env vars.')
-      return
-    }
-
     const newImages: string[] = []
     
     for (const file of Array.from(files)) {
+      const reader = new FileReader()
+      const promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result)
+          } else {
+            reject(new Error('Failed to convert file to base64'))
+          }
+        }
+        reader.onerror = () => reject(new Error('Failed to read file'))
+        reader.readAsDataURL(file)
+      })
+
       try {
-        const uploaded = await uploadToCloudinary(file)
-        newImages.push(uploaded.secure_url)
+        const dataUrl = await promise
+        newImages.push(dataUrl)
       } catch (error) {
-        console.error('Error uploading image:', error)
-        toast.error(`Failed to upload ${file.name}`)
+        console.error('Error converting image:', error)
+        toast.error(`Failed to process ${file.name}`)
       }
     }
     
