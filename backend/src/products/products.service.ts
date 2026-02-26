@@ -191,7 +191,7 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    const normalizedUpdate: UpdateProductDto = { ...updateProductDto };
+    const normalizedUpdate: UpdateProductDto & { inStock?: boolean } = { ...updateProductDto };
     if (Array.isArray(updateProductDto.variants)) {
       normalizedUpdate.variants = Array.from(
         new Set(
@@ -200,6 +200,9 @@ export class ProductsService {
             .filter((variant) => variant.length > 0),
         ),
       );
+    }
+    if (typeof updateProductDto.stock === 'number' && Number.isFinite(updateProductDto.stock)) {
+      normalizedUpdate.inStock = updateProductDto.stock > 0;
     }
     return this.firestoreService.update<Product>(this.collection, id, normalizedUpdate);
   }

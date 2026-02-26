@@ -266,7 +266,6 @@ export default function EditProductPage() {
         sku: data.sku?.trim() || undefined,
         images,
         variants: normalizeStringArray(variants),
-        inStock: data.stock > 0,
       })
       toast.success('Produit modifie avec succes !')
       window.dispatchEvent(new Event('productsUpdated'))
