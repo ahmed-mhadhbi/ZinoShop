@@ -1,31 +1,68 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Upload, X, Plus } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useAuthStore } from '@/store/authStore'
+
+const CATEGORY_VALUES = ['Bracelets', 'colliers', 'bague', 'series', 'manchettes', 'rangements', 'montres', 'sac', 'boucles'] as const
+const MATERIAL_VALUES = ['Gold', 'Silver', 'Platinum', 'Pearl', 'Diamond', 'Other'] as const
+
+type CategoryValue = (typeof CATEGORY_VALUES)[number]
+type MaterialValue = (typeof MATERIAL_VALUES)[number]
+
+const isCategoryValue = (value: string): value is CategoryValue =>
+  CATEGORY_VALUES.includes(value as CategoryValue)
+
+const isMaterialValue = (value: string): value is MaterialValue =>
+  MATERIAL_VALUES.includes(value as MaterialValue)
 
 const productSchema = z.object({
   name: z.string().min(3, 'Le nom doit contenir au moins 3 caracteres'),
   description: z.string().min(10, 'La description doit contenir au moins 10 caracteres'),
   price: z.number().min(0, 'Le prix doit etre positif'),
   sku: z.string().optional(),
-  category: z.enum(['Bracelets', 'colliers', 'bague', 'series', 'manchettes', 'rangements', 'montres', 'sac', 'boucles']),
-  material: z.enum(['Gold', 'Silver', 'Platinum', 'Pearl', 'Diamond', 'Other']),
+  category: z.enum(CATEGORY_VALUES),
+  material: z.enum(MATERIAL_VALUES),
   stock: z.number().min(0, 'Le stock doit etre positif'),
 })
 
 type ProductFormData = z.infer<typeof productSchema>
+
+interface ProductResponse {
+  id: string
+  name?: string
+  description?: string
+  price?: number
+  sku?: string
+  category?: string
+  material?: string
+  stock?: number
+  images?: string[]
+  variants?: string[]
+}
 
 const MAX_IMAGE_SIDE_PX = 1200
 const TARGET_IMAGE_BYTES = 220 * 1024
 const MAX_IMAGES_PAYLOAD_BYTES = 850 * 1024
 const MIN_QUALITY = 0.4
 const QUALITY_STEP = 0.1
+
+const normalizeStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? Array.from(
+        new Set(
+          value
+            .map((item) => String(item || '').trim())
+            .filter((item) => item.length > 0),
+        ),
+      )
+    : []
 
 const estimateDataUrlSize = (dataUrl: string) => {
   const base64 = dataUrl.split(',')[1] || ''
@@ -89,20 +126,87 @@ const compressImageToDataUrl = async (file: File, maxBytes: number): Promise<str
   return bestDataUrl
 }
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const router = useRouter()
+  const params = useParams()
+  const { isAuthenticated, user } = useAuthStore()
+  const rawId = params?.id
+  const productId = Array.isArray(rawId) ? rawId[0] : rawId
+
   const [images, setImages] = useState<string[]>([])
   const [variants, setVariants] = useState<string[]>([])
   const [variantInput, setVariantInput] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      price: 0,
+      sku: '',
+      category: 'Bracelets',
+      material: 'Gold',
+      stock: 0,
+    },
   })
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') {
+      router.push('/auth/login')
+      return
+    }
+
+    if (!productId) {
+      toast.error('Produit introuvable')
+      router.push('/admin/products')
+      return
+    }
+
+    const fetchProduct = async () => {
+      try {
+        setIsLoading(true)
+        const response = await api.get<ProductResponse>(`/products/${productId}?_t=${Date.now()}`)
+        const product = response.data
+
+        const rawCategory = String(product.category || '')
+        const rawMaterial = String(product.material || '')
+        const category: CategoryValue = isCategoryValue(rawCategory)
+          ? rawCategory
+          : 'Bracelets'
+        const material: MaterialValue = isMaterialValue(rawMaterial)
+          ? rawMaterial
+          : 'Gold'
+
+        reset({
+          name: String(product.name || ''),
+          description: String(product.description || ''),
+          price: Number(product.price || 0),
+          sku: String(product.sku || ''),
+          category,
+          material,
+          stock: Number(product.stock || 0),
+        })
+
+        setImages(normalizeStringArray(product.images))
+        setVariants(normalizeStringArray(product.variants))
+      } catch (error: any) {
+        console.error('Failed to fetch product:', error)
+        toast.error(error.response?.data?.message || 'Echec du chargement du produit')
+        router.push('/admin/products')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [isAuthenticated, user, productId, reset, router])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -110,7 +214,7 @@ export default function NewProductPage() {
 
     const newImages: string[] = []
     let currentPayloadBytes = images.reduce((sum, image) => sum + estimateDataUrlSize(image), 0)
-    
+
     for (const file of Array.from(files)) {
       try {
         const remainingBudget = Math.max(80 * 1024, MAX_IMAGES_PAYLOAD_BYTES - currentPayloadBytes)
@@ -130,7 +234,7 @@ export default function NewProductPage() {
         toast.error(`Echec du traitement de ${file.name}`)
       }
     }
-    
+
     setImages([...images, ...newImages])
   }
 
@@ -154,29 +258,38 @@ export default function NewProductPage() {
   }
 
   const onSubmit = async (data: ProductFormData) => {
+    if (!productId) return
     setIsSubmitting(true)
     try {
-      await api.post('/products', {
+      await api.patch(`/products/${productId}`, {
         ...data,
+        sku: data.sku?.trim() || undefined,
         images,
-        variants,
-        isActive: true,
+        variants: normalizeStringArray(variants),
+        inStock: data.stock > 0,
       })
-      toast.success('Produit cree avec succes !')
-      // Dispatch event to refresh products on client side
+      toast.success('Produit modifie avec succes !')
       window.dispatchEvent(new Event('productsUpdated'))
       router.push('/admin/products')
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Echec de creation du produit')
+      toast.error(error.response?.data?.message || 'Echec de modification du produit')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  if (!isAuthenticated || user?.role !== 'admin' || isLoading) {
+    return (
+      <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Chargement...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="pt-24 pb-20">
       <div className="container-custom max-w-4xl">
-        <h1 className="text-4xl font-serif font-bold mb-8">Ajouter un produit</h1>
+        <h1 className="text-4xl font-serif font-bold mb-8">Modifier le produit</h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="card p-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -195,13 +308,13 @@ export default function NewProductPage() {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                SKU <span className="text-gray-500 text-xs">(optionnel - genere automatiquement si vide)</span>
+                SKU <span className="text-gray-500 text-xs">(optionnel)</span>
               </label>
               <input
                 type="text"
                 {...register('sku')}
                 className="input-field"
-                placeholder="Laisser vide pour generation automatique"
+                placeholder="SKU du produit"
               />
               {errors.sku && (
                 <p className="text-red-600 text-sm mt-1">{errors.sku.message}</p>
@@ -239,16 +352,11 @@ export default function NewProductPage() {
             <div>
               <label className="block text-sm font-semibold mb-2">Categorie *</label>
               <select {...register('category')} className="input-field">
-                <option value="">Selectionner une categorie</option>
-                <option value="Bracelets">Bracelets</option>
-                <option value="colliers">colliers</option>
-                <option value="bague">bague</option>
-                <option value="series">series</option>
-                <option value="manchettes">manchettes</option>
-                <option value="rangements">rangements</option>
-                <option value="montres">montres</option>
-                <option value="sac">sac</option>
-                <option value="boucles">boucles</option>
+                {CATEGORY_VALUES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
               {errors.category && (
                 <p className="text-red-600 text-sm mt-1">{errors.category.message}</p>
@@ -258,7 +366,6 @@ export default function NewProductPage() {
             <div>
               <label className="block text-sm font-semibold mb-2">Matiere *</label>
               <select {...register('material')} className="input-field">
-                <option value="">Selectionner une matiere</option>
                 <option value="Gold">Or</option>
                 <option value="Silver">Argent</option>
                 <option value="Platinum">Platine</option>
@@ -378,11 +485,11 @@ export default function NewProductPage() {
               disabled={isSubmitting}
               className="btn-primary flex-1 disabled:opacity-50"
             >
-              {isSubmitting ? 'Creation...' : 'Creer le produit'}
+              {isSubmitting ? 'Mise a jour...' : 'Mettre a jour le produit'}
             </button>
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push('/admin/products')}
               className="btn-outline"
             >
               Annuler
@@ -393,4 +500,3 @@ export default function NewProductPage() {
     </div>
   )
 }
-

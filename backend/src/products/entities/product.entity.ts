@@ -7,6 +7,8 @@ export enum ProductCategory {
   MANCHETTES = 'manchettes',
   RANGEMENTS = 'rangements',
   MONTRES = 'montres',
+  SAC = 'sac',
+  BOUCLES = 'boucles',
 }
 
 export enum ProductMaterial {
