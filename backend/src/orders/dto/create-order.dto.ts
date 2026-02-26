@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsOptional,
   Min,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -72,6 +73,9 @@ export class CreateOrderDto {
 
   @ApiProperty()
   @IsString()
+  @Matches(/^\+216\d{8}$/, {
+    message: 'shippingPhone must be in +216XXXXXXXX format',
+  })
   shippingPhone: string;
 
   @ApiProperty({ required: false })

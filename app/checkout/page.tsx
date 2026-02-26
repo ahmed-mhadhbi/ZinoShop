@@ -11,12 +11,17 @@ import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 
+const TUNISIA_COUNTRY_CODE = '+216'
+const LOCAL_PHONE_LENGTH = 8
+
 const checkoutSchema = z.object({
   email: z.string().email('Adresse email invalide'),
   firstName: z.string().min(2, 'Le prenom est obligatoire'),
   lastName: z.string().min(2, 'Le nom est obligatoire'),
   address: z.string().min(5, 'L adresse est obligatoire'),
-  phone: z.string().min(10, 'Numero de telephone invalide'),
+  phone: z
+    .string()
+    .regex(/^\d{8}$/, 'Numero de telephone invalide (8 chiffres)'),
   paymentMethod: z.enum(['pay_on_delivery']),
   saveInfo: z.boolean().default(false),
 })
@@ -28,6 +33,8 @@ export default function CheckoutPage() {
   const { items, getTotal, clearCart } = useCartStore()
   const { isAuthenticated, user } = useAuthStore()
   const [isProcessing, setIsProcessing] = useState(false)
+  const normalizeLocalPhone = (value: string) =>
+    value.replace(/\D/g, '').slice(0, LOCAL_PHONE_LENGTH)
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -45,10 +52,13 @@ export default function CheckoutPage() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       email: user?.email || '',
+      phone: normalizeLocalPhone((user?.phone || '').replace(/^\+216/, '')),
       paymentMethod: 'pay_on_delivery',
       saveInfo: false,
     },
   })
+
+  const phoneField = register('phone')
 
   const paymentMethod = watch('paymentMethod')
   const total = getTotal()
@@ -65,6 +75,7 @@ export default function CheckoutPage() {
     setIsProcessing(true)
 
     try {
+      const localPhone = normalizeLocalPhone(data.phone)
       // Prepare order data
       const orderData = {
         items: items.map(item => ({
@@ -76,7 +87,7 @@ export default function CheckoutPage() {
         customerFirstName: data.firstName,
         customerLastName: data.lastName,
         shippingAddress: data.address,
-        shippingPhone: data.phone,
+        shippingPhone: `${TUNISIA_COUNTRY_CODE}${localPhone}`,
         shipping: shipping,
         notes: `Email client: ${data.email}`,
       }
@@ -145,12 +156,25 @@ export default function CheckoutPage() {
                   <label className="block text-sm font-semibold mb-2">
                     Numero de telephone *
                   </label>
-                  <input
-                    type="tel"
-                    {...register('phone')}
-                    className="input-field"
-                    placeholder="+1 (555) 123-4567"
-                  />
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 border border-gray-300 border-r-0 rounded-l-lg bg-gray-50 text-gray-700 text-sm font-semibold">
+                      {TUNISIA_COUNTRY_CODE}
+                    </span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      maxLength={LOCAL_PHONE_LENGTH}
+                      {...phoneField}
+                      onChange={(e) => {
+                        e.target.value = normalizeLocalPhone(e.target.value)
+                        phoneField.onChange(e)
+                      }}
+                      className="input-field rounded-l-none border-l-0"
+                      placeholder="12345678"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Entrez uniquement les 8 chiffres de votre numero.</p>
                   {errors.phone && (
                     <p className="text-red-600 text-sm mt-1">
                       {errors.phone.message}

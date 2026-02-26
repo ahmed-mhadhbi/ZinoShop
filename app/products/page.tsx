@@ -67,7 +67,7 @@ export default function ProductsPage() {
     }
   }
 
-  const categories = ['all', 'Bracelets', 'colliers', 'bague', 'series', 'manchettes', 'rangements', 'montres']
+  const categories = ['all', 'Bracelets', 'colliers', 'bague', 'series', 'manchettes', 'rangements', 'montres', 'sac', 'boucles']
   const materials = ['all', 'Gold', 'Silver', 'Platinum', 'Pearl', 'Diamond', 'Other']
   const materialLabels: Record<string, string> = {
     all: 'toutes',
