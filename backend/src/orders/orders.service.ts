@@ -140,43 +140,16 @@ export class OrdersService {
 
       await batch.commit();
 
-      // Send order confirmation email
-      try {
-        const user = await this.usersService.findOne(userId);
-        if (user && 'email' in user) {
-          const orderWithItems = { ...order, items: orderItems };
-          await this.emailService.sendOrderConfirmation(
-            orderWithItems as any,
-            (user as any).email,
-            `${(user as any).firstName} ${(user as any).lastName}`,
-          );
-        }
-      } catch (error) {
-        console.error('Failed to send order confirmation email:', error);
-      }
-
-      // If Pay on Delivery, send notification email to admin
-      if (createOrderDto.paymentMethod === 'pay_on_delivery') {
-        try {
-          const user = await this.usersService.findOne(userId);
-          const users = await this.usersService.findAll();
-          if (user && 'email' in user) {
-            const orderWithItems = {
-              ...order,
-              createdAt: normalizedOrderDate,
-              items: orderItems,
-            };
-            await this.emailService.sendOrderNotificationToAdmin(
-              orderWithItems as any,
-              (user as any).email,
-              `${(user as any).firstName} ${(user as any).lastName}`,
-              users.length,
-            );
-          }
-        } catch (error) {
-          console.error('Failed to send Pay on Delivery notification email:', error);
-        }
-      }
+      // Trigger emails asynchronously so checkout response is not blocked by SMTP latency.
+      void this.sendOrderEmails(
+        {
+          ...order,
+          createdAt: normalizedOrderDate,
+          items: orderItems,
+        } as Order & { items: OrderItem[] },
+        userId,
+        createOrderDto.paymentMethod,
+      );
 
       return {
         ...order,
@@ -320,5 +293,39 @@ export class OrdersService {
     return Object.fromEntries(
       Object.entries(data).filter(([, value]) => value !== undefined),
     );
+  }
+
+  private async sendOrderEmails(
+    order: Order & { items: OrderItem[] },
+    userId: string,
+    paymentMethod: string,
+  ): Promise<void> {
+    try {
+      const user = await this.usersService.findOne(userId);
+      if (!user || !('email' in user)) {
+        return;
+      }
+
+      const customerEmail = (user as any).email;
+      const customerName = `${(user as any).firstName} ${(user as any).lastName}`.trim();
+
+      await this.emailService.sendOrderConfirmation(
+        order as any,
+        customerEmail,
+        customerName,
+      );
+
+      if (paymentMethod === 'pay_on_delivery') {
+        const users = await this.usersService.findAll();
+        await this.emailService.sendOrderNotificationToAdmin(
+          order as any,
+          customerEmail,
+          customerName,
+          users.length,
+        );
+      }
+    } catch (error) {
+      console.error('Order email flow failed:', error);
+    }
   }
 }
