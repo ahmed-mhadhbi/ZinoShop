@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 let firebaseApp: admin.app.App;
+let firestoreDb: admin.firestore.Firestore | null = null;
 
 const loadServiceAccountFromFile = (): any => {
   try {
@@ -110,7 +111,11 @@ export const getFirestore = () => {
           credential: admin.credential.cert(serviceAccount),
         });
         console.log('Firebase initialized from FIREBASE_SERVICE_ACCOUNT (fallback)');
-        return admin.firestore();
+        if (!firestoreDb) {
+          firestoreDb = admin.firestore();
+          firestoreDb.settings({ ignoreUndefinedProperties: true });
+        }
+        return firestoreDb;
       }
       
       // Option 2: Use individual environment variables
@@ -123,7 +128,11 @@ export const getFirestore = () => {
           }),
         });
         console.log('Firebase initialized from environment variables (fallback)');
-        return admin.firestore();
+        if (!firestoreDb) {
+          firestoreDb = admin.firestore();
+          firestoreDb.settings({ ignoreUndefinedProperties: true });
+        }
+        return firestoreDb;
       }
 
       // Option 3: Try to load from service account JSON file
@@ -133,7 +142,11 @@ export const getFirestore = () => {
           credential: admin.credential.cert(serviceAccount),
         });
         console.log('Firebase initialized from JSON file (fallback)');
-        return admin.firestore();
+        if (!firestoreDb) {
+          firestoreDb = admin.firestore();
+          firestoreDb.settings({ ignoreUndefinedProperties: true });
+        }
+        return firestoreDb;
       }
 
       // Don't try default credentials as fallback - it will fail without proper setup
@@ -152,7 +165,11 @@ export const getFirestore = () => {
       );
     }
   }
-  return admin.firestore();
+  if (!firestoreDb) {
+    firestoreDb = admin.firestore();
+    firestoreDb.settings({ ignoreUndefinedProperties: true });
+  }
+  return firestoreDb;
 };
 
 export const getAuth = () => {
