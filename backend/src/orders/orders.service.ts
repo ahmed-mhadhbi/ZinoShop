@@ -87,11 +87,14 @@ export class OrdersService {
             productId: String(item.productId),
             productName,
             productSku,
-            variant: selectedVariant,
             price: productPrice,
             quantity: Number(item.quantity),
             createdAt: new Date(),
           };
+
+          if (selectedVariant) {
+            orderItem.variant = selectedVariant;
+          }
 
           orderItems.push(orderItem);
         } catch (error) {

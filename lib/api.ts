@@ -22,7 +22,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 20000, // 20 second timeout to tolerate slower responses in production
+  timeout: 45000, // Render cold starts can exceed 20s
 })
 
 // Simple retry logic for GET requests on network failures / timeouts / 5xx
