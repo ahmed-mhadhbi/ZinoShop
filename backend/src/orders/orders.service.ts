@@ -132,10 +132,10 @@ export class OrdersService {
         const itemRef = orderItemsRef.doc();
         item.id = itemRef.id;
         item.orderId = order.id;
-        batch.set(itemRef, {
+        batch.set(itemRef, this.omitUndefined({
           ...item,
           createdAt: admin.firestore.Timestamp.fromDate(item.createdAt),
-        });
+        }));
       }
 
       await batch.commit();
@@ -314,5 +314,11 @@ export class OrdersService {
       createdAt,
       updatedAt,
     };
+  }
+
+  private omitUndefined<T extends Record<string, any>>(data: T): Record<string, any> {
+    return Object.fromEntries(
+      Object.entries(data).filter(([, value]) => value !== undefined),
+    );
   }
 }
