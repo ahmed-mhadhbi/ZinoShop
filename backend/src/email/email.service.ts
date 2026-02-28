@@ -102,8 +102,28 @@ export class EmailService {
     );
   }
 
-  async sendOrderNotificationToAdmin(order: any, customerEmail: string, customerName: string) {
-    const itemsHtml = order.items?.map((item: any) => `
+  async sendOrderNotificationToAdmin(
+    order: any,
+    customerEmail: string,
+    customerName: string,
+    customerCount?: number,
+  ) {
+    const safeItems = Array.isArray(order.items) ? order.items : [];
+    const totalProductsCount = safeItems.reduce(
+      (sum: number, item: any) => sum + (Number(item.quantity) || 0),
+      0,
+    );
+    const totalProductsAmount = safeItems.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+      0,
+    );
+    const orderDate = (() => {
+      const date = order?.createdAt ? new Date(order.createdAt) : new Date();
+      return isNaN(date.getTime()) ? new Date().toLocaleString() : date.toLocaleString();
+    })();
+
+    const itemsHtml = safeItems.map((item: any) => `
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #eee;">
           ${item.productName || 'N/A'}
@@ -111,8 +131,8 @@ export class EmailService {
         </td>
         <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productSku || 'N/A'}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${parseFloat(item.price).toLocaleString()}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${parseFloat(item.total).toLocaleString()}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${(Number(item.price) || 0).toLocaleString()} tnd</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${((Number(item.price) || 0) * (Number(item.quantity) || 0)).toLocaleString()} tnd</td>
       </tr>
     `).join('') || '';
 
@@ -141,14 +161,14 @@ export class EmailService {
             </div>
             <div class="content">
               <div class="info-box">
-                <strong>⚠️ PAY ON DELIVERY ORDER</strong><br>
+                <strong>PAY ON DELIVERY ORDER</strong><br>
                 Payment will be collected upon delivery.
               </div>
-              
+
               <div class="order-details">
                 <h2>Order Information</h2>
                 <p><strong>Order Number:</strong> ${order.orderNumber}</p>
-                <p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+                <p><strong>Order Date:</strong> ${orderDate}</p>
                 <p><strong>Payment Method:</strong> <span class="highlight">Pay on Delivery</span></p>
                 <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
                 <p><strong>Order Status:</strong> ${order.status}</p>
@@ -159,6 +179,8 @@ export class EmailService {
                 <p><strong>Name:</strong> ${customerName}</p>
                 <p><strong>Email:</strong> ${customerEmail}</p>
                 <p><strong>Phone:</strong> ${order.shippingPhone}</p>
+                <p><strong>Client ID:</strong> ${order.userId || 'N/A'}</p>
+                <p><strong>Nombre total de clients:</strong> ${typeof customerCount === 'number' ? customerCount : 'N/A'}</p>
               </div>
 
               <div class="order-details">
@@ -186,15 +208,23 @@ export class EmailService {
                   <tfoot>
                     <tr>
                       <td colspan="4" style="text-align: right; font-weight: bold; padding-top: 10px;">Subtotal:</td>
-                      <td style="text-align: right; font-weight: bold; padding-top: 10px;">${parseFloat(order.subtotal).toLocaleString()} tnd</td>
+                      <td style="text-align: right; font-weight: bold; padding-top: 10px;">${(Number(order.subtotal) || 0).toLocaleString()} tnd</td>
                     </tr>
                     <tr>
                       <td colspan="4" style="text-align: right; font-weight: bold;">Livraison:</td>
-                      <td style="text-align: right; font-weight: bold;">${parseFloat(order.shipping).toLocaleString()} tnd</td>
+                      <td style="text-align: right; font-weight: bold;">${(Number(order.shipping) || 0).toLocaleString()} tnd</td>
                     </tr>
                     <tr>
                       <td colspan="4" style="text-align: right; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 2px solid #ddd;">Total:</td>
-                      <td style="text-align: right; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 2px solid #ddd;">${parseFloat(order.total).toLocaleString()} tnd</td>
+                      <td style="text-align: right; font-weight: bold; font-size: 1.2em; padding-top: 10px; border-top: 2px solid #ddd;">${(Number(order.total) || 0).toLocaleString()} tnd</td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" style="text-align: right; font-weight: bold;">Total produits (quantite):</td>
+                      <td style="text-align: right; font-weight: bold;">${totalProductsCount}</td>
+                    </tr>
+                    <tr>
+                      <td colspan="4" style="text-align: right; font-weight: bold;">Total de tous les produits:</td>
+                      <td style="text-align: right; font-weight: bold;">${totalProductsAmount.toLocaleString()} tnd</td>
                     </tr>
                   </tfoot>
                 </table>

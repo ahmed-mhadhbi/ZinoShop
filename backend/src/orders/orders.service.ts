@@ -101,19 +101,25 @@ export class OrdersService {
       }
 
       const { items, ...dtoWithoutItems } = createOrderDto;
-const shippingFee = 8;
-const orderData = {
-  ...dtoWithoutItems,
-  userId,
-  orderNumber: this.generateOrderNumber(),
-  subtotal,
-  shipping: shippingFee,
-  total: subtotal + shippingFee,
-  status: OrderStatus.PENDING,
-  paymentStatus: PaymentStatus.PENDING,
-};
-// DO NOT include items here!
-const order = await this.firestoreService.create<Order>(this.collection, orderData);
+      const shippingFee = 8;
+      const orderData = {
+        ...dtoWithoutItems,
+        userId,
+        orderNumber: this.generateOrderNumber(),
+        subtotal,
+        shipping: shippingFee,
+        total: subtotal + shippingFee,
+        status: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.PENDING,
+      };
+      // DO NOT include items here!
+      const order = await this.firestoreService.create<Order>(this.collection, orderData);
+      const normalizedOrderDate =
+        order.createdAt instanceof Date && !isNaN(order.createdAt.getTime())
+          ? order.createdAt
+          : order.updatedAt instanceof Date && !isNaN(order.updatedAt.getTime())
+          ? order.updatedAt
+          : new Date();
 
       // Save order items as subcollection
       const orderItemsRef = this.db.collection(`${this.collection}/${order.id}/items`);
@@ -150,12 +156,18 @@ const order = await this.firestoreService.create<Order>(this.collection, orderDa
       if (createOrderDto.paymentMethod === 'pay_on_delivery') {
         try {
           const user = await this.usersService.findOne(userId);
+          const users = await this.usersService.findAll();
           if (user && 'email' in user) {
-            const orderWithItems = { ...order, items: orderItems };
+            const orderWithItems = {
+              ...order,
+              createdAt: normalizedOrderDate,
+              items: orderItems,
+            };
             await this.emailService.sendOrderNotificationToAdmin(
               orderWithItems as any,
               (user as any).email,
               `${(user as any).firstName} ${(user as any).lastName}`,
+              users.length,
             );
           }
         } catch (error) {
@@ -163,7 +175,11 @@ const order = await this.firestoreService.create<Order>(this.collection, orderDa
         }
       }
 
-      return { ...order, items: orderItems } as Order & { items: OrderItem[] };
+      return {
+        ...order,
+        createdAt: normalizedOrderDate,
+        items: orderItems,
+      } as Order & { items: OrderItem[] };
     } catch (error) {
       console.error('Error in OrdersService.create:', error);
       if (error instanceof HttpException || error instanceof NotFoundException || error instanceof BadRequestException) {
@@ -187,14 +203,16 @@ const order = await this.firestoreService.create<Order>(this.collection, orderDa
       limit,
     );
 
+    const normalizedOrders = orders.map((order) => this.normalizeOrderDates(order));
+
     // Only load items if requested (for performance)
     if (!includeItems) {
-      return orders;
+      return normalizedOrders;
     }
 
     // Load items for each order (limit to avoid too many parallel requests)
     const ordersWithItems = await Promise.all(
-      orders.slice(0, 20).map(async (order) => {
+      normalizedOrders.slice(0, 20).map(async (order) => {
         const itemsSnapshot = await this.db
           .collection(`${this.collection}/${order.id}/items`)
           .get();
@@ -213,17 +231,19 @@ const order = await this.firestoreService.create<Order>(this.collection, orderDa
     );
 
     // For orders beyond the first 20, return without items
-    const remainingOrders = orders.slice(20).map(order => ({ ...order, items: [] } as Order & { items: OrderItem[] }));
+    const remainingOrders = normalizedOrders.slice(20).map(order => ({ ...order, items: [] } as Order & { items: OrderItem[] }));
     
     return [...ordersWithItems, ...remainingOrders];
   }
 
   async findOne(id: string, userId?: string): Promise<Order> {
-    const order = await this.firestoreService.findById<Order>(this.collection, id);
+    const foundOrder = await this.firestoreService.findById<Order>(this.collection, id);
     
-    if (!order) {
+    if (!foundOrder) {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
+
+    const order = this.normalizeOrderDates(foundOrder);
 
     if (userId && order.userId !== userId) {
       throw new NotFoundException(`Order with ID ${id} not found`);
@@ -268,5 +288,28 @@ const order = await this.firestoreService.create<Order>(this.collection, orderDa
 
   private generateOrderNumber(): string {
     return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  }
+
+  private normalizeOrderDates(order: Order): Order {
+    const fallbackDate =
+      order.updatedAt instanceof Date && !isNaN(order.updatedAt.getTime())
+        ? order.updatedAt
+        : new Date();
+
+    const createdAt =
+      order.createdAt instanceof Date && !isNaN(order.createdAt.getTime())
+        ? order.createdAt
+        : fallbackDate;
+
+    const updatedAt =
+      order.updatedAt instanceof Date && !isNaN(order.updatedAt.getTime())
+        ? order.updatedAt
+        : createdAt;
+
+    return {
+      ...order,
+      createdAt,
+      updatedAt,
+    };
   }
 }
