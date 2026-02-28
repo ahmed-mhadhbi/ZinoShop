@@ -28,8 +28,25 @@ async function bootstrap() {
   app.use(compression());
 
   // CORS
+  const configuredOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const defaultAllowedOrigins = [
+    'http://localhost:3000',
+    'https://zino-shop.vercel.app',
+    'https://www.zino-shop.vercel.app',
+  ];
+  const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...configuredOrigins]));
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     credentials: true,
   });
 

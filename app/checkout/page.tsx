@@ -78,10 +78,10 @@ export default function CheckoutPage() {
       const localPhone = normalizeLocalPhone(data.phone)
       // Prepare order data
       const orderData = {
-        items: items.map(item => ({
+        items: items.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
-          variant: item.variant,
+          ...(item.variant ? { variant: item.variant } : {}),
         })),
         paymentMethod: data.paymentMethod,
         customerFirstName: data.firstName,
@@ -105,10 +105,16 @@ export default function CheckoutPage() {
     } catch (error: any) {
       console.error('Checkout error:', error)
       console.error('Error response:', error.response?.data)
+      console.error('Error code:', error.code)
+      console.error('Error message:', error.message)
       
       if (error.response?.status === 401) {
         toast.error('Veuillez vous connecter pour passer une commande')
         router.push('/auth/login?redirect=/checkout')
+      } else if (error.code === 'ECONNABORTED') {
+        toast.error('Le serveur met trop de temps a repondre. Reessayez dans 30 secondes.')
+      } else if (error.code === 'ERR_NETWORK') {
+        toast.error('Connexion au serveur impossible. Verifiez le backend/CORS puis reessayez.')
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message)
       } else {

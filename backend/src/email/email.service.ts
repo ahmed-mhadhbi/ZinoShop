@@ -16,6 +16,9 @@ export class EmailService {
           host: 'smtp.gmail.com',
           port: 465,
           secure: true, // true for 465, false for other ports
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000,
           auth: {
             user: smtpUser,
             pass: smtpPass, // Gmail App Password
