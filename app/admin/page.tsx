@@ -18,6 +18,11 @@ export default function AdminDashboard() {
   })
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const formatOrderDate = (value: any) => {
+    if (!value) return '-'
+    const date = new Date(value)
+    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString()
+  }
 
   useEffect(() => {
     console.log('Admin page check - isAuthenticated:', isAuthenticated, 'user:', user, 'role:', user?.role) // Debug log
@@ -196,7 +201,7 @@ export default function AdminDashboard() {
                       <div>
                         <p className="font-semibold">Commande #{order.orderNumber}</p>
                         <p className="text-sm text-gray-600">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {formatOrderDate(order.createdAt)}
                         </p>
                       </div>
                       <div className="text-right">

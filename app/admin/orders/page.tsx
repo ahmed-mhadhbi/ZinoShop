@@ -16,6 +16,11 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const formatOrderDateTime = (value: any) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -84,7 +89,7 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-2">{order.email || order.customerEmail || "-"}</td>
                     <td className="px-4 py-2 capitalize">{order.status}</td>
                     <td className="px-4 py-2">{order.subtotal?.toLocaleString()} tnd</td>
-                    <td className="px-4 py-2">{order.createdAt ? new Date(order.createdAt).toLocaleString() : "-"}</td>
+                    <td className="px-4 py-2">{formatOrderDateTime(order.createdAt)}</td>
                     <td className="px-4 py-2">
                       <select
                         className="input-field"
