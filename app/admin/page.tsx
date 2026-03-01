@@ -25,41 +25,38 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    console.log('Admin page check - isAuthenticated:', isAuthenticated, 'user:', user, 'role:', user?.role) // Debug log
-    
     if (!isAuthenticated) {
       router.push('/auth/login?redirect=/admin')
       return
     }
     if (user?.role !== 'admin') {
-      console.log('User is not admin, redirecting to login') // Debug log
       router.push('/auth/login?redirect=/admin')
       return
     }
 
     const fetchData = async () => {
       try {
-        // Fetch stats and recent orders
-        const [productsRes, ordersRes, usersRes] = await Promise.all([
-          api.get('/products'),
-          api.get('/orders'),
-          api.get('/users'),
+        // Fetch lightweight paginated payloads to keep admin dashboard fast.
+        const [productsRes, ordersRes, usersRes, orderStatsRes] = await Promise.all([
+          api.get('/products?page=1&limit=1'),
+          api.get('/orders?paginated=true&page=1&limit=5&includeItems=false'),
+          api.get('/users?page=1&limit=1'),
+          api.get('/orders/stats'),
         ])
 
-        const orders = ordersRes.data || []
-        const totalRevenue = orders.reduce(
-          (sum: number, order: any) => sum + (order.total || 0),
-          0
-        )
+        const productsData = productsRes.data || {}
+        const ordersData = ordersRes.data || {}
+        const usersData = usersRes.data || {}
+        const statsData = orderStatsRes.data || {}
 
         setStats({
-          totalProducts: productsRes.data?.length || 0,
-          totalOrders: orders.length,
-          totalUsers: usersRes.data?.length || 0,
-          totalRevenue,
+          totalProducts: productsData.total || 0,
+          totalOrders: statsData.totalOrders || ordersData.total || 0,
+          totalUsers: usersData.total || 0,
+          totalRevenue: statsData.totalRevenue || 0,
         })
 
-        setRecentOrders(orders.slice(0, 5))
+        setRecentOrders(ordersData.orders || [])
       } catch (error) {
         console.error('Failed to fetch admin data:', error)
       } finally {

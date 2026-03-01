@@ -8,6 +8,7 @@ import { initializeFirebase } from './config/firebase.config';
 import { CacheInterceptor } from './common/interceptors/cache.interceptor';
 import compression = require('compression');
 import * as express from 'express';
+import { rateLimit } from 'express-rate-limit';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -18,14 +19,29 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   initializeFirebase(configService);
 
-  // Configure body parser with increased limits for base64 images
+  // Configure body parser limits (tunable via env for low-memory hosts)
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.use(express.json({ limit: '50mb' }));
-  expressApp.use(express.urlencoded({ limit: '50mb', extended: true }));
+  expressApp.set('trust proxy', 1);
+  expressApp.disable('x-powered-by');
+  const bodySizeLimit = process.env.BODY_SIZE_LIMIT || '10mb';
+  expressApp.use(express.json({ limit: bodySizeLimit }));
+  expressApp.use(express.urlencoded({ limit: bodySizeLimit, extended: true }));
 
   // Security
   app.use(helmet());
   app.use(compression());
+  app.use(
+    rateLimit({
+      windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
+      max: Number(process.env.RATE_LIMIT_MAX || 120),
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        statusCode: 429,
+        message: 'Too many requests, please retry shortly.',
+      },
+    }),
+  );
 
   // CORS
   const configuredOrigins = (process.env.FRONTEND_URL || '')
@@ -65,19 +81,25 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api');
 
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('ZinoShop API')
-    .setDescription('The ZinoShop E-commerce API documentation')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  const swaggerEnabled =
+    process.env.SWAGGER_ENABLED === 'true' ||
+    process.env.NODE_ENV !== 'production';
+  if (swaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('ZinoShop API')
+      .setDescription('The ZinoShop E-commerce API documentation')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger documentation: http://localhost:${port}/api/docs`);
+  if (swaggerEnabled) {
+    console.log(`Swagger documentation: http://localhost:${port}/api/docs`);
+  }
 }
 bootstrap();

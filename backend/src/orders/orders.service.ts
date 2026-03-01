@@ -31,9 +31,6 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto, userId: string): Promise<Order> {
     try {
-      console.log('OrdersService.create - DTO:', createOrderDto);
-      console.log('OrdersService.create - UserId:', userId);
-
       if (!userId) {
         throw new BadRequestException('User ID is required to create an order');
       }
@@ -42,7 +39,6 @@ export class OrdersService {
       const orderItems: OrderItem[] = [];
 
       for (const item of createOrderDto.items) {
-        console.log('Processing item:', item);
         try {
           const product = await this.productsService.findOne(item.productId);
           
@@ -212,6 +208,101 @@ export class OrdersService {
     return [...ordersWithItems, ...remainingOrders];
   }
 
+  async findPage(
+    userId?: string,
+    includeItems: boolean = false,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{
+    orders: Order[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const filters = userId
+      ? [{ field: 'userId', operator: '==', value: userId }]
+      : undefined;
+
+    const validPage = page > 0 && Number.isFinite(page) ? Math.floor(page) : 1;
+    const validLimit = limit > 0 && Number.isFinite(limit) ? Math.min(Math.floor(limit), 50) : 20;
+
+    const { items, total } = await this.firestoreService.findPage<Order>(
+      this.collection,
+      filters,
+      validPage,
+      validLimit,
+      { field: 'createdAt', direction: 'desc' },
+    );
+
+    const normalizedOrders = items.map((order) => this.normalizeOrderDates(order));
+
+    if (!includeItems) {
+      return {
+        orders: normalizedOrders,
+        total,
+        page: validPage,
+        limit: validLimit,
+        totalPages: Math.ceil(total / validLimit),
+      };
+    }
+
+    const ordersWithItems = await Promise.all(
+      normalizedOrders.map(async (order) => {
+        const itemsSnapshot = await this.db
+          .collection(`${this.collection}/${order.id}/items`)
+          .get();
+
+        const orderItems = itemsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          } as OrderItem;
+        });
+
+        return { ...order, items: orderItems } as Order & { items: OrderItem[] };
+      }),
+    );
+
+    return {
+      orders: ordersWithItems,
+      total,
+      page: validPage,
+      limit: validLimit,
+      totalPages: Math.ceil(total / validLimit),
+    };
+  }
+
+  async getStats(userId?: string): Promise<{ totalOrders: number; totalRevenue: number }> {
+    let query: admin.firestore.Query = this.db.collection(this.collection);
+    if (userId) {
+      query = query.where('userId', '==', userId);
+    }
+
+    const countSnapshot = await query.count().get();
+    const totalOrders = countSnapshot.data().count;
+
+    let totalRevenue = 0;
+    const aggregateField = (admin.firestore as any).AggregateField;
+    if (aggregateField?.sum && typeof (query as any).aggregate === 'function') {
+      const aggregateSnapshot = await (query as any)
+        .aggregate({ totalRevenue: aggregateField.sum('total') })
+        .get();
+      totalRevenue = Number(aggregateSnapshot.data()?.totalRevenue || 0);
+    } else {
+      // Fallback for older SDK behavior: fetch only the "total" field.
+      const totalsSnapshot = await query.select('total').get();
+      totalRevenue = totalsSnapshot.docs.reduce(
+        (sum, doc) => sum + (Number(doc.get('total')) || 0),
+        0,
+      );
+    }
+
+    return { totalOrders, totalRevenue };
+  }
+
   async findOne(id: string, userId?: string): Promise<Order> {
     const foundOrder = await this.firestoreService.findById<Order>(this.collection, id);
     
@@ -316,12 +407,12 @@ export class OrdersService {
       );
 
       if (paymentMethod === 'pay_on_delivery') {
-        const users = await this.usersService.findAll();
+        const usersCount = await this.usersService.count();
         await this.emailService.sendOrderNotificationToAdmin(
           order as any,
           customerEmail,
           customerName,
-          users.length,
+          usersCount,
         );
       }
     } catch (error) {

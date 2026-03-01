@@ -14,6 +14,7 @@ import { BlogService } from './blog.service';
 import { CreateBlogPostDto } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 
 @ApiTags('blog')
 @Controller('blog')
@@ -21,7 +22,7 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new blog post (Admin only)' })
   create(@Body() createBlogPostDto: CreateBlogPostDto) {
@@ -42,7 +43,7 @@ export class BlogController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update blog post (Admin only)' })
   update(@Param('id') id: string, @Body() updateBlogPostDto: UpdateBlogPostDto) {
@@ -50,7 +51,7 @@ export class BlogController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete blog post (Admin only)' })
   remove(@Param('id') id: string) {

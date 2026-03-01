@@ -25,9 +25,18 @@ export class CacheInterceptor implements NestInterceptor {
         response.setHeader('Pragma', 'no-cache');
         response.setHeader('Expires', '0');
       } else {
-        // Cache for 5 minutes for public endpoints
-        response.setHeader('Cache-Control', 'public, max-age=300');
-        response.setHeader('ETag', `"${Date.now()}"`);
+        const isFeaturedProducts = request.path?.includes('/products/featured');
+        if (isFeaturedProducts) {
+          response.setHeader(
+            'Cache-Control',
+            'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
+          );
+        } else {
+          response.setHeader(
+            'Cache-Control',
+            'public, max-age=60, s-maxage=120, stale-while-revalidate=120',
+          );
+        }
       }
     }
     

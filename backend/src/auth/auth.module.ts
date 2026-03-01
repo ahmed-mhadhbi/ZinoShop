@@ -15,7 +15,15 @@ import { LocalStrategy } from './strategies/local.strategy';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET') || 'your-secret-key',
+        secret: (() => {
+          const secret = config.get<string>('JWT_SECRET');
+          if (!secret || secret.trim().length < 32) {
+            throw new Error(
+              'JWT_SECRET is required and must be at least 32 characters long.',
+            );
+          }
+          return secret;
+        })(),
         signOptions: { expiresIn: '7d' },
       }),
     }),

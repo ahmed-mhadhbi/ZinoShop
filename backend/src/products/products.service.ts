@@ -8,6 +8,38 @@ import { ProductCategory, ProductMaterial } from './entities/product.entity';
 @Injectable()
 export class ProductsService {
   private readonly collection = 'products';
+  private readonly listFields = [
+    'id',
+    'name',
+    'price',
+    'salePrice',
+    'sku',
+    'category',
+    'material',
+    'images',
+    'image',
+    'variants',
+    'stock',
+    'inStock',
+    'rating',
+    'reviewCount',
+    'isActive',
+    'createdAt',
+    'updatedAt',
+  ];
+  private readonly searchFields = [...this.listFields, 'description'];
+  private readonly featuredFields = [
+    'id',
+    'name',
+    'price',
+    'images',
+    'image',
+    'variants',
+    'rating',
+    'reviewCount',
+    'sku',
+    'createdAt',
+  ];
 
   constructor(private firestoreService: FirestoreService) {}
 
@@ -18,7 +50,6 @@ export class ProductsService {
       const timestamp = Date.now().toString(36).toUpperCase();
       const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
       createProductDto.sku = `${categoryPrefix}-${timestamp}-${randomSuffix}`;
-      console.log(`Auto-generated SKU: ${createProductDto.sku}`);
     }
 
     // Ensure name is not empty
@@ -71,7 +102,7 @@ export class ProductsService {
     limit: number = 20,
   ): Promise<{ products: Product[]; total: number; page: number; limit: number; totalPages: number }> {
     const validPage = page > 0 && Number.isFinite(page) ? Math.floor(page) : 1;
-    const validLimit = limit > 0 && Number.isFinite(limit) ? Math.floor(limit) : 20;
+    const validLimit = limit > 0 && Number.isFinite(limit) ? Math.min(Math.floor(limit), 50) : 20;
 
     const filters: Array<{ field: string; operator: any; value: any }> = [
       { field: 'isActive', operator: '==', value: true },
@@ -104,6 +135,7 @@ export class ProductsService {
           validPage,
           validLimit,
           { field: 'createdAt', direction: 'desc' },
+          this.listFields,
         );
         return {
           products: items,
@@ -118,6 +150,9 @@ export class ProductsService {
         const allProducts = await this.firestoreService.findAll<Product>(
           this.collection,
           filters,
+          undefined,
+          undefined,
+          this.listFields,
         );
         allProducts.sort((a, b) => {
           const aDate = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
@@ -145,6 +180,8 @@ export class ProductsService {
       this.collection,
       filters,
       undefined,
+      undefined,
+      this.searchFields,
     );
 
     allProducts.sort((a, b) => {
@@ -156,8 +193,12 @@ export class ProductsService {
     const searchLower = trimmedSearch!.toLowerCase();
     allProducts = allProducts.filter(
       (product) =>
-        product.name.toLowerCase().includes(searchLower) ||
-        product.description.toLowerCase().includes(searchLower),
+        String(product.name || '')
+          .toLowerCase()
+          .includes(searchLower) ||
+        String(product.description || '')
+          .toLowerCase()
+          .includes(searchLower),
     );
 
     const total = allProducts.length;
@@ -219,33 +260,43 @@ export class ProductsService {
 
     const now = Date.now();
     if (this.featuredCache && this.featuredCache.expiresAt > now) {
-      console.log('ProductsService.getFeatured: cache hit')
       return this.featuredCache.data
     }
 
     // If a fetch is already in progress, await it to deduplicate concurrent calls
     if (this.featuredCachePromise) {
-      console.log('ProductsService.getFeatured: awaiting in-flight fetch')
       return this.featuredCachePromise
     }
 
     // Fetch and cache
     this.featuredCachePromise = (async () => {
-      const start = Date.now()
-      console.log('ProductsService.getFeatured: cache miss, fetching from Firestore')
+      let featured: Product[] = [];
 
-      const products = await this.firestoreService.findAll<Product>(
-        this.collection,
-        [{ field: 'isActive', operator: '==', value: true }],
-        undefined, // No orderBy to avoid index requirement
-      );
+      try {
+        featured = await this.firestoreService.findAll<Product>(
+          this.collection,
+          [{ field: 'isActive', operator: '==', value: true }],
+          { field: 'rating', direction: 'desc' },
+          8,
+          this.featuredFields,
+        );
+      } catch {
+        // Fallback for environments missing the required Firestore index.
+        const products = await this.firestoreService.findAll<Product>(
+          this.collection,
+          [{ field: 'isActive', operator: '==', value: true }],
+          undefined,
+          undefined,
+          this.featuredFields,
+        );
+        featured = products
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 8);
+      }
 
-      const featured = products
+      featured = featured
         .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 8)
-
-      const duration = Date.now() - start
-      console.log(`ProductsService.getFeatured: fetched ${featured.length} items in ${duration}ms`) 
+        .slice(0, 8);
 
       this.featuredCache = { data: featured, expiresAt: Date.now() + ttlSeconds * 1000 }
       this.featuredCachePromise = null

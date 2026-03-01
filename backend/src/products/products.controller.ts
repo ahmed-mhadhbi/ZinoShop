@@ -15,6 +15,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductCategory, ProductMaterial } from './entities/product.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 
 @ApiTags('products')
 @Controller('products')
@@ -22,7 +23,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new product (Admin only)' })
   create(@Body() createProductDto: CreateProductDto) {
@@ -50,7 +51,7 @@ export class ProductsController {
     const validMinPrice = parsedMinPrice !== undefined && !isNaN(parsedMinPrice) ? parsedMinPrice : undefined;
     const validMaxPrice = parsedMaxPrice !== undefined && !isNaN(parsedMaxPrice) ? parsedMaxPrice : undefined;
     const validPage = parsedPage > 0 && !isNaN(parsedPage) ? parsedPage : 1;
-    const validLimit = parsedLimit > 0 && parsedLimit <= 100 && !isNaN(parsedLimit) ? parsedLimit : 20;
+    const validLimit = parsedLimit > 0 && parsedLimit <= 50 && !isNaN(parsedLimit) ? parsedLimit : 20;
 
     return this.productsService.findAll(
       category,
@@ -76,7 +77,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update product (Admin only)' })
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
@@ -84,7 +85,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete product (Admin only)' })
   remove(@Param('id') id: string) {

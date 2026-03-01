@@ -43,6 +43,7 @@ export class FirestoreService {
     filters?: Array<{ field: string; operator: any; value: any }>,
     orderBy?: { field: string; direction: 'asc' | 'desc' },
     limit?: number,
+    selectFields?: string[],
   ): Promise<T[]> {
     let query: admin.firestore.Query = this.db.collection(collection);
 
@@ -72,6 +73,10 @@ export class FirestoreService {
       query = query.limit(limit);
     }
 
+    if (selectFields && selectFields.length > 0) {
+      query = query.select(...selectFields);
+    }
+
     const snapshot = await query.get();
     return snapshot.docs.map((doc) =>
       this.convertTimestamps({ id: doc.id, ...doc.data() }),
@@ -84,6 +89,7 @@ export class FirestoreService {
     page: number = 1,
     limit: number = 20,
     orderBy?: { field: string; direction: 'asc' | 'desc' },
+    selectFields?: string[],
   ): Promise<{ items: T[]; total: number }> {
     let query: admin.firestore.Query = this.db.collection(collection);
 
@@ -109,6 +115,10 @@ export class FirestoreService {
 
     if (orderBy) {
       query = query.orderBy(orderBy.field, orderBy.direction);
+    }
+
+    if (selectFields && selectFields.length > 0) {
+      query = query.select(...selectFields);
     }
 
     const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;

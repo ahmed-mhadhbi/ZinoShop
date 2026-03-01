@@ -70,8 +70,7 @@ export default function ProductCard({
 
     setIsAddingToWishlist(true)
     try {
-      const response = await api.post(`/wishlist/${product.id}`)
-      console.log('Added to wishlist:', response.data)
+      await api.post(`/wishlist/${product.id}`)
       toast.success('Ajoute a la liste de souhaits !')
       // Dispatch custom event to refresh wishlist page if it's open
       window.dispatchEvent(new CustomEvent('wishlistUpdated'))

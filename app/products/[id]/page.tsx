@@ -30,7 +30,6 @@ export default function ProductDetailPage() {
       try {
         setIsLoading(true)
         const response = await api.get(`/products/${params.id}`)
-        console.log('Fetched product:', response.data) // Debug log
         setProduct(response.data)
         // Reset selected image when product changes
         setSelectedImage(0)
@@ -84,8 +83,7 @@ export default function ProductDetailPage() {
           text: `Decouvrez ce magnifique ${product.name} sur ZinoShop !`,
           url: window.location.href,
         })
-      } catch (err) {
-        console.log('Error sharing:', err)
+      } catch {
       }
     } else {
       navigator.clipboard.writeText(window.location.href)
@@ -104,8 +102,7 @@ export default function ProductDetailPage() {
 
     setIsAddingToWishlist(true)
     try {
-      const response = await api.post(`/wishlist/${product.id}`)
-      console.log('Added to wishlist:', response.data)
+      await api.post(`/wishlist/${product.id}`)
       toast.success('Ajoute a la liste de souhaits !')
       // Dispatch custom event to refresh wishlist page if it's open
       window.dispatchEvent(new CustomEvent('wishlistUpdated'))

@@ -92,21 +92,14 @@ export default function CheckoutPage() {
         notes: `Email client: ${data.email}`,
       }
 
-      console.log('Submitting order:', orderData)
-
       // Create order via API
-      const response = await api.post('/orders', orderData)
-      
-      console.log('Order created:', response.data)
+      await api.post('/orders', orderData)
 
       toast.success('Commande validee avec succes !')
       clearCart()
       router.push('/order-success')
     } catch (error: any) {
       console.error('Checkout error:', error)
-      console.error('Error response:', error.response?.data)
-      console.error('Error code:', error.code)
-      console.error('Error message:', error.message)
       
       if (error.response?.status === 401) {
         toast.error('Veuillez vous connecter pour passer une commande')

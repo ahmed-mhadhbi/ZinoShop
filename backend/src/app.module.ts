@@ -12,6 +12,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { PaymentsModule } from './payments/payments.module';
 import { BlogModule } from './blog/blog.module';
 import { EmailModule } from './email/email.module';
+import { AdminGuard } from './common/guards/admin.guard';
 
 @Module({
   imports: [
@@ -31,6 +32,6 @@ import { EmailModule } from './email/email.module';
     EmailModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AdminGuard],
 })
 export class AppModule {}

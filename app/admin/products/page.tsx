@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -15,6 +15,39 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const fetchProducts = useCallback(async (targetPage: number = 1) => {
+    try {
+      setIsLoading(true)
+      const response = await api.get(`/products?page=${targetPage}&limit=30&_t=${Date.now()}`)
+      const data = response.data
+      
+      // Handle both old format (array) and new format (paginated object)
+      if (Array.isArray(data)) {
+        setProducts(data)
+        setTotal(data.length)
+        setTotalPages(1)
+      } else {
+        const nextProducts = data.products || []
+        setProducts(nextProducts)
+        setTotal(data.total || nextProducts.length || 0)
+        setTotalPages(data.totalPages || 1)
+        setPage(data.page || targetPage)
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch products:', error)
+      const errorMessage = error.response?.data?.message || error.message || 'Echec du chargement des produits'
+      toast.error(errorMessage)
+      setProducts([])
+      setTotal(0)
+      setTotalPages(1)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
@@ -22,11 +55,11 @@ export default function AdminProductsPage() {
       return
     }
 
-    fetchProducts()
+    fetchProducts(page)
 
     // Listen for product updates
     const handleProductsUpdate = () => {
-      fetchProducts()
+      fetchProducts(page)
     }
     
     window.addEventListener('productsUpdated', handleProductsUpdate)
@@ -34,33 +67,7 @@ export default function AdminProductsPage() {
     return () => {
       window.removeEventListener('productsUpdated', handleProductsUpdate)
     }
-  }, [isAuthenticated, user, router])
-
-  const fetchProducts = async () => {
-    try {
-      setIsLoading(true)
-      // Add cache-busting parameter for admin to see latest products
-      const response = await api.get(`/products?page=1&limit=1000&_t=${Date.now()}`)
-      const data = response.data
-      
-      // Handle both old format (array) and new format (paginated object)
-      if (Array.isArray(data)) {
-        setProducts(data)
-        console.log(`Loaded ${data.length} products (array format)`)
-      } else {
-        const products = data.products || []
-        setProducts(products)
-        console.log(`Loaded ${products.length} products (paginated format, total: ${data.total || 0})`)
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch products:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Echec du chargement des produits'
-      toast.error(errorMessage)
-      setProducts([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [isAuthenticated, user, router, fetchProducts, page])
 
   const handleDelete = async (id: string) => {
     if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return
@@ -68,7 +75,7 @@ export default function AdminProductsPage() {
     try {
       await api.delete(`/products/${id}`)
       toast.success('Produit supprime avec succes')
-      fetchProducts()
+      fetchProducts(page)
     } catch (error) {
       toast.error('Echec de suppression du produit')
     }
@@ -91,6 +98,7 @@ export default function AdminProductsPage() {
       <div className="container-custom">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-serif font-bold">Gerer les produits</h1>
+          <p className="text-gray-600">Total: {total}</p>
           <Link href="/admin/products/new" className="btn-primary flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Ajouter un produit
@@ -213,6 +221,28 @@ export default function AdminProductsPage() {
             <Link href="/admin/products/new" className="btn-primary">
               Ajouter votre premier produit
             </Link>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button
+              onClick={() => fetchProducts(Math.max(1, page - 1))}
+              disabled={page === 1 || isLoading}
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Precedent
+            </button>
+            <span className="text-gray-700">
+              Page {page} sur {totalPages}
+            </span>
+            <button
+              onClick={() => fetchProducts(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages || isLoading}
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Suivant
+            </button>
           </div>
         )}
       </div>
