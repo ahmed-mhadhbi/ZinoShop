@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
 import { Heart } from 'lucide-react'
@@ -14,11 +14,10 @@ export default function WishlistPage() {
   const [wishlistItems, setWishlistItems] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     try {
       setIsLoading(true)
       const response = await api.get('/wishlist')
-      console.log('Wishlist response:', response.data)
       setWishlistItems(response.data || [])
     } catch (error: any) {
       console.error('Failed to fetch wishlist:', error)
@@ -29,7 +28,7 @@ export default function WishlistPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [router])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -38,7 +37,7 @@ export default function WishlistPage() {
     }
 
     fetchWishlist()
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router, fetchWishlist])
 
   // Refresh wishlist when page becomes visible or focused (user might have added items from another tab/page)
   useEffect(() => {
@@ -65,7 +64,7 @@ export default function WishlistPage() {
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener('wishlistUpdated', handleWishlistUpdate)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, fetchWishlist])
 
   if (!isAuthenticated || isLoading) {
     return (

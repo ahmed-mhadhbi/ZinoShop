@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import { Search, Shield, Trash2, User as UserIcon } from 'lucide-react'
@@ -23,27 +23,44 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const fetchUsers = useCallback(async (targetPage: number = 1) => {
+    setIsLoading(true)
+    try {
+      const response = await api.get(`/users?page=${targetPage}&limit=20`)
+      const data = response.data
+      if (Array.isArray(data)) {
+        setUsers(data)
+        setPage(targetPage)
+        setTotal(data.length)
+        setTotalPages(1)
+      } else {
+        const nextUsers = data.users || []
+        setUsers(nextUsers)
+        setPage(data.page || targetPage)
+        setTotal(data.total || nextUsers.length || 0)
+        setTotalPages(data.totalPages || 1)
+      }
+    } catch (error) {
+      toast.error('Echec du chargement des utilisateurs')
+      setUsers([])
+      setTotal(0)
+      setTotalPages(1)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
       router.push('/auth/login?redirect=/admin/users')
       return
     }
-    fetchUsers()
-  }, [isAuthenticated, user, router])
-
-  const fetchUsers = async () => {
-    setIsLoading(true)
-    try {
-      const response = await api.get('/users')
-      setUsers(response.data || [])
-    } catch (error) {
-      toast.error('Echec du chargement des utilisateurs')
-      setUsers([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    fetchUsers(page)
+  }, [isAuthenticated, user, router, fetchUsers, page])
 
   const handleRoleChange = async (targetUser: AdminUser, newRole: 'user' | 'admin') => {
     if (targetUser.role === newRole) return
@@ -51,7 +68,7 @@ export default function AdminUsersPage() {
     try {
       await api.patch(`/users/${targetUser.id}`, { role: newRole })
       toast.success('Role utilisateur mis a jour')
-      fetchUsers()
+      fetchUsers(page)
     } catch (error) {
       toast.error('Echec de mise a jour du role')
     } finally {
@@ -70,7 +87,7 @@ export default function AdminUsersPage() {
     try {
       await api.delete(`/users/${targetUser.id}`)
       toast.success('Utilisateur supprime')
-      fetchUsers()
+      fetchUsers(page)
     } catch (error) {
       toast.error('Echec de suppression de l utilisateur')
     } finally {
@@ -97,7 +114,7 @@ export default function AdminUsersPage() {
       <div className="container-custom">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
           <h1 className="text-3xl md:text-4xl font-serif font-bold">Gerer les utilisateurs</h1>
-          <p className="text-gray-600">Total: {filteredUsers.length}</p>
+          <p className="text-gray-600">Total: {total}</p>
         </div>
 
         <div className="mb-6">
@@ -169,6 +186,28 @@ export default function AdminUsersPage() {
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button
+              onClick={() => fetchUsers(Math.max(1, page - 1))}
+              disabled={page === 1 || isLoading}
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Precedent
+            </button>
+            <span className="text-gray-700">
+              Page {page} sur {totalPages}
+            </span>
+            <button
+              onClick={() => fetchUsers(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages || isLoading}
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

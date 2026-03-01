@@ -43,13 +43,27 @@ export class WishlistService {
       }
 
       // Check if item already exists in wishlist
-      const existingItems = await this.firestoreService.findManyByField<WishlistItem>(
-        this.collection,
-        'userId',
-        userId,
-      );
-
-      const existingItem = existingItems.find((item) => item.productId === productId);
+      let existingItem: WishlistItem | undefined;
+      try {
+        const [match] = await this.firestoreService.findAll<WishlistItem>(
+          this.collection,
+          [
+            { field: 'userId', operator: '==', value: userId },
+            { field: 'productId', operator: '==', value: productId },
+          ],
+          undefined,
+          1,
+        );
+        existingItem = match;
+      } catch {
+        // Fallback when composite indexes are not configured yet.
+        const existingItems = await this.firestoreService.findManyByField<WishlistItem>(
+          this.collection,
+          'userId',
+          userId,
+        );
+        existingItem = existingItems.find((item) => item.productId === productId);
+      }
 
       if (existingItem) {
         // Return with product relation loaded
@@ -78,13 +92,26 @@ export class WishlistService {
   }
 
   async removeItem(userId: string, productId: string) {
-    const items = await this.firestoreService.findManyByField<WishlistItem>(
-      this.collection,
-      'userId',
-      userId,
-    );
-
-    const item = items.find((item) => item.productId === productId);
+    let item: WishlistItem | undefined;
+    try {
+      const [match] = await this.firestoreService.findAll<WishlistItem>(
+        this.collection,
+        [
+          { field: 'userId', operator: '==', value: userId },
+          { field: 'productId', operator: '==', value: productId },
+        ],
+        undefined,
+        1,
+      );
+      item = match;
+    } catch {
+      const items = await this.firestoreService.findManyByField<WishlistItem>(
+        this.collection,
+        'userId',
+        userId,
+      );
+      item = items.find((entry) => entry.productId === productId);
+    }
 
     if (!item) {
       throw new NotFoundException('Wishlist item not found');

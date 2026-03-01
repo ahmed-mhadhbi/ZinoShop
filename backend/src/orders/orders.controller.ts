@@ -16,6 +16,7 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -28,9 +29,6 @@ export class OrdersController {
   @ApiOperation({ summary: 'Create a new order' })
   async create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
     try {
-      console.log('Creating order:', JSON.stringify(createOrderDto, null, 2));
-      console.log('User ID:', req.user?.userId);
-      
       if (!req.user || !req.user.userId) {
         throw new HttpException('User authentication required', HttpStatus.UNAUTHORIZED);
       }
@@ -38,7 +36,6 @@ export class OrdersController {
       return await this.ordersService.create(createOrderDto, req.user.userId);
     } catch (error) {
       console.error('Order creation error:', error);
-      console.error('Error stack:', error.stack);
       
       // If it's already an HTTP exception, re-throw it
       if (error instanceof HttpException) {
@@ -64,13 +61,30 @@ export class OrdersController {
     @Request() req,
     @Query('includeItems') includeItems?: string,
     @Query('limit') limit?: string,
+    @Query('page') page?: string,
+    @Query('paginated') paginated?: string,
   ) {
     // Admin can see all orders, users see only their orders
     const userId = req.user.role === 'admin' ? undefined : req.user.userId;
     const shouldIncludeItems = includeItems !== 'false';
     const parsedLimit = limit ? Number(limit) : 50;
-    const validLimit = parsedLimit > 0 && parsedLimit <= 100 && !isNaN(parsedLimit) ? parsedLimit : 50;
+    const validLimit = parsedLimit > 0 && parsedLimit <= 50 && !isNaN(parsedLimit) ? parsedLimit : 20;
+    const parsedPage = page ? Number(page) : undefined;
+    const shouldPaginate = paginated === 'true' || parsedPage !== undefined;
+
+    if (shouldPaginate) {
+      const validPage = parsedPage && parsedPage > 0 && !isNaN(parsedPage) ? parsedPage : 1;
+      return this.ordersService.findPage(userId, shouldIncludeItems, validPage, validLimit);
+    }
+
     return this.ordersService.findAll(userId, shouldIncludeItems, validLimit);
+  }
+
+  @Get('stats')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Get order statistics (Admin only)' })
+  getStats() {
+    return this.ordersService.getStats();
   }
 
   @Get(':id')
@@ -81,6 +95,7 @@ export class OrdersController {
   }
 
   @Patch(':id')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Update order (Admin only)' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);

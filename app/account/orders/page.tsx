@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
 import { Package, Calendar, DollarSign } from 'lucide-react'
@@ -12,6 +12,37 @@ export default function OrdersPage() {
   const { isAuthenticated } = useAuthStore()
   const [orders, setOrders] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const fetchOrders = useCallback(async (targetPage: number) => {
+    try {
+      setIsLoading(true)
+      const response = await api.get(
+        `/orders?paginated=true&page=${targetPage}&limit=10&includeItems=true`,
+      )
+      const data = response.data
+      if (Array.isArray(data)) {
+        setOrders(data)
+        setTotal(data.length)
+        setTotalPages(1)
+        setPage(targetPage)
+      } else {
+        setOrders(data.orders || [])
+        setTotal(data.total || 0)
+        setTotalPages(data.totalPages || 1)
+        setPage(data.page || targetPage)
+      }
+    } catch (error) {
+      console.error('Failed to fetch orders:', error)
+      setOrders([])
+      setTotal(0)
+      setTotalPages(1)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -19,19 +50,8 @@ export default function OrdersPage() {
       return
     }
 
-    const fetchOrders = async () => {
-      try {
-        const response = await api.get('/orders')
-        setOrders(response.data)
-      } catch (error) {
-        console.error('Failed to fetch orders:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchOrders()
-  }, [isAuthenticated, router])
+    fetchOrders(1)
+  }, [isAuthenticated, router, fetchOrders])
 
   if (!isAuthenticated || isLoading) {
     return (
@@ -116,6 +136,28 @@ export default function OrdersPage() {
                 </div>
               </div>
             ))}
+
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-8">
+                <button
+                  onClick={() => fetchOrders(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Precedent
+                </button>
+                <span className="text-gray-700">
+                  Page {page} sur {totalPages} ({total} au total)
+                </span>
+                <button
+                  onClick={() => fetchOrders(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Suivant
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

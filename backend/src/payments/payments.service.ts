@@ -13,7 +13,21 @@ export class PaymentsService {
     });
   }
 
-  async createPaymentIntent(orderId: string, amount: number) {
+  async createPaymentIntent(orderId: string, userId: string, role?: string) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('Stripe is not configured');
+    }
+
+    const order = await this.ordersService.findOne(
+      orderId,
+      role === 'admin' ? undefined : userId,
+    );
+
+    const amount = Number(order.total);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error('Invalid order total for payment');
+    }
+
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
@@ -46,6 +60,10 @@ export class PaymentsService {
   }
 
   async handleWebhook(payload: any, signature: string) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('Stripe is not configured');
+    }
+
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     let event: Stripe.Event;
 

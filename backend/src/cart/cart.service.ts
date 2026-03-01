@@ -45,15 +45,29 @@ export class CartService {
   }
 
   async addItem(userId: string, addToCartDto: AddToCartDto) {
-    const existingItems = await this.firestoreService.findManyByField<CartItem>(
-      this.collection,
-      'userId',
-      userId,
-    );
-
-    const existingItem = existingItems.find(
-      (item) => item.productId === addToCartDto.productId,
-    );
+    let existingItem: CartItem | undefined;
+    try {
+      const [match] = await this.firestoreService.findAll<CartItem>(
+        this.collection,
+        [
+          { field: 'userId', operator: '==', value: userId },
+          { field: 'productId', operator: '==', value: addToCartDto.productId },
+        ],
+        undefined,
+        1,
+      );
+      existingItem = match;
+    } catch {
+      // Fallback when composite indexes are not configured yet.
+      const existingItems = await this.firestoreService.findManyByField<CartItem>(
+        this.collection,
+        'userId',
+        userId,
+      );
+      existingItem = existingItems.find(
+        (item) => item.productId === addToCartDto.productId,
+      );
+    }
 
     if (existingItem) {
       const updatedQuantity = existingItem.quantity + addToCartDto.quantity;

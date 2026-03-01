@@ -12,8 +12,12 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create payment intent for Stripe' })
-  async createPaymentIntent(@Body() body: { orderId: string; amount: number }) {
-    return this.paymentsService.createPaymentIntent(body.orderId, body.amount);
+  async createPaymentIntent(@Body() body: { orderId: string }, @Request() req) {
+    return this.paymentsService.createPaymentIntent(
+      body.orderId,
+      req.user.userId,
+      req.user.role,
+    );
   }
 
   @Post('webhook')

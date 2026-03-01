@@ -34,17 +34,13 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const response = await api.post('/auth/login', data)
-      console.log('Login response:', response.data) // Debug log
       login(response.data.user, response.data.token)
       toast.success('Bon retour !')
       
       // Check for redirect parameter or redirect based on user role
       const urlParams = new URLSearchParams(window.location.search)
       const redirect = urlParams.get('redirect')
-      
-      console.log('User role:', response.data.user.role) // Debug log
-      console.log('Redirect param:', redirect) // Debug log
-      
+
       if (redirect) {
         router.push(redirect)
       } else if (response.data.user.role === 'admin') {
