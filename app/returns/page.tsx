@@ -83,7 +83,7 @@ export default function ReturnsPage() {
                 <div>
                   <p className="font-semibold">Contactez-nous</p>
                   <p className="text-sm">
-                    Ecrivez-nous a returns@zinoshop.com ou via le formulaire de
+                    Ecrivez-nous a zino.shop.contact@gmail.com ou via le formulaire de
                     contact pour lancer la demande de retour.
                   </p>
                 </div>

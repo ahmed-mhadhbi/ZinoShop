@@ -221,5 +221,5 @@ MIT License
 
 ## Support
 
-For support, email info@zinoshop.com or open an issue in the repository.
+For support, email zino.shop.contact@gmail.com or open an issue in the repository.
 
