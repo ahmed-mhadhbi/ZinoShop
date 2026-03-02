@@ -18,6 +18,44 @@ export class UsersService {
 
   constructor(private firestoreService: FirestoreService) {}
 
+  private normalizeDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+
+    if (value instanceof Date) {
+      return !isNaN(value.getTime()) ? value : undefined;
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      return !isNaN(parsed.getTime()) ? parsed : undefined;
+    }
+
+    if (typeof value === 'object') {
+      const timestampLike = value as {
+        toDate?: () => Date;
+        _seconds?: number;
+        seconds?: number;
+        _nanoseconds?: number;
+        nanoseconds?: number;
+      };
+
+      if (typeof timestampLike.toDate === 'function') {
+        const parsed = timestampLike.toDate();
+        return parsed instanceof Date && !isNaN(parsed.getTime()) ? parsed : undefined;
+      }
+
+      const seconds = Number(timestampLike._seconds ?? timestampLike.seconds);
+      const nanoseconds = Number(timestampLike._nanoseconds ?? timestampLike.nanoseconds ?? 0);
+      if (Number.isFinite(seconds)) {
+        const millis = Math.floor(seconds * 1000 + nanoseconds / 1_000_000);
+        const parsed = new Date(millis);
+        return !isNaN(parsed.getTime()) ? parsed : undefined;
+      }
+    }
+
+    return undefined;
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
       // Check if user with email already exists
@@ -52,7 +90,7 @@ export class UsersService {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      createdAt: user.createdAt,
+      createdAt: this.normalizeDate(user.createdAt),
     }));
   }
 
@@ -85,7 +123,7 @@ export class UsersService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        createdAt: user.createdAt,
+        createdAt: this.normalizeDate(user.createdAt),
       })),
       total,
       page: validPage,
@@ -121,7 +159,7 @@ export class UsersService {
       state: user.state,
       zipCode: user.zipCode,
       country: user.country,
-      createdAt: user.createdAt,
+      createdAt: this.normalizeDate(user.createdAt),
     };
   }
 

@@ -13,7 +13,7 @@ type AdminUser = {
   firstName?: string
   lastName?: string
   role?: 'user' | 'admin'
-  createdAt?: string
+  createdAt?: unknown
 }
 
 export default function AdminUsersPage() {
@@ -101,6 +101,43 @@ export default function AdminUsersPage() {
     return u.email.toLowerCase().includes(term) || fullName.includes(term)
   })
 
+  const formatUserSignupDate = (value: unknown) => {
+    if (!value) return '-'
+
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? '-' : value.toLocaleDateString()
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value)
+      return isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString()
+    }
+
+    if (typeof value === 'object') {
+      const timestampLike = value as {
+        toDate?: () => Date
+        _seconds?: number
+        seconds?: number
+        _nanoseconds?: number
+        nanoseconds?: number
+      }
+
+      if (typeof timestampLike.toDate === 'function') {
+        const parsed = timestampLike.toDate()
+        return isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString()
+      }
+
+      const seconds = Number(timestampLike._seconds ?? timestampLike.seconds)
+      const nanoseconds = Number(timestampLike._nanoseconds ?? timestampLike.nanoseconds ?? 0)
+      if (Number.isFinite(seconds)) {
+        const parsed = new Date(Math.floor(seconds * 1000 + nanoseconds / 1_000_000))
+        return isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString()
+      }
+    }
+
+    return '-'
+  }
+
   if (!isAuthenticated || user?.role !== 'admin' || isLoading) {
     return (
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
@@ -147,7 +184,7 @@ export default function AdminUsersPage() {
                       <p className="text-sm text-gray-600 truncate">{u.email}</p>
                       <p className="text-xs text-gray-500 mt-1">
                         Inscrit le:{' '}
-                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}
+                        {formatUserSignupDate(u.createdAt)}
                       </p>
                     </div>
 

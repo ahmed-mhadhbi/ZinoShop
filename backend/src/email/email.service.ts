@@ -41,7 +41,7 @@ export class EmailService {
     }
 
     const mailOptions = {
-      from: process.env.SMTP_USER || 'noreply@zinoshop.com',
+      from: process.env.SMTP_USER || 'zino.shop.contact@gmail.com',
       to,
       subject,
       text: text || this.stripHtml(html),
@@ -249,7 +249,7 @@ export class EmailService {
     `;
 
     return this.sendEmail(
-      'ahmedmha.fd@gmail.com',
+      'zino.shop.contact@gmail.com',
       `New Pay on Delivery Order - ${order.orderNumber}`,
       html,
     );

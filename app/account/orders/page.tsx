@@ -7,6 +7,14 @@ import { Package, Calendar, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 
+const statusLabels: Record<string, string> = {
+  pending: 'En attente',
+  processing: 'En cours',
+  shipped: 'En livraison',
+  delivered: 'Livree',
+  cancelled: 'Annulee',
+}
+
 export default function OrdersPage() {
   const router = useRouter()
   const { isAuthenticated } = useAuthStore()
@@ -20,7 +28,7 @@ export default function OrdersPage() {
     try {
       setIsLoading(true)
       const response = await api.get(
-        `/orders?paginated=true&page=${targetPage}&limit=10&includeItems=true`,
+        `/orders?paginated=true&page=${targetPage}&limit=10&includeItems=true&_t=${Date.now()}`,
       )
       const data = response.data
       if (Array.isArray(data)) {
@@ -50,8 +58,14 @@ export default function OrdersPage() {
       return
     }
 
-    fetchOrders(1)
-  }, [isAuthenticated, router, fetchOrders])
+    fetchOrders(page)
+
+    const refreshInterval = window.setInterval(() => {
+      fetchOrders(page)
+    }, 15000)
+
+    return () => window.clearInterval(refreshInterval)
+  }, [isAuthenticated, router, fetchOrders, page])
 
   if (!isAuthenticated || isLoading) {
     return (
@@ -111,10 +125,12 @@ export default function OrdersPage() {
                               ? 'text-green-600'
                               : order.status === 'cancelled'
                               ? 'text-red-600'
+                              : order.status === 'shipped'
+                              ? 'text-blue-600'
                               : 'text-yellow-600'
                           }`}
                         >
-                          {order.status}
+                          {statusLabels[order.status] || order.status}
                         </span>
                       </div>
                     </div>

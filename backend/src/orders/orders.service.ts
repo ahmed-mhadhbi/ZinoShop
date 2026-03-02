@@ -126,11 +126,13 @@ export class OrdersService {
 
       for (const item of orderItems) {
         const itemRef = orderItemsRef.doc();
+        const itemCreatedAt = this.normalizeOrderItemDate(item.createdAt, normalizedOrderDate);
         item.id = itemRef.id;
         item.orderId = order.id;
+        item.createdAt = itemCreatedAt;
         batch.set(itemRef, this.omitUndefined({
           ...item,
-          createdAt: admin.firestore.Timestamp.fromDate(item.createdAt),
+          createdAt: admin.firestore.Timestamp.fromDate(itemCreatedAt),
         }));
       }
 
@@ -194,7 +196,7 @@ export class OrdersService {
           return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
+            createdAt: this.normalizeOrderItemDate(data.createdAt, order.createdAt),
           } as OrderItem;
         });
 
@@ -258,7 +260,7 @@ export class OrdersService {
           return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
+            createdAt: this.normalizeOrderItemDate(data.createdAt, order.createdAt),
           } as OrderItem;
         });
 
@@ -326,7 +328,7 @@ export class OrdersService {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
+        createdAt: this.normalizeOrderItemDate(data.createdAt, order.createdAt),
       } as OrderItem;
     });
 
@@ -378,6 +380,47 @@ export class OrdersService {
       createdAt,
       updatedAt,
     };
+  }
+
+  private normalizeOrderItemDate(value: unknown, fallback: Date): Date {
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      return value;
+    }
+
+    if (value && typeof value === 'object') {
+      const timestampLike = value as {
+        toDate?: () => Date;
+        _seconds?: number;
+        seconds?: number;
+        _nanoseconds?: number;
+        nanoseconds?: number;
+      };
+
+      if (typeof timestampLike.toDate === 'function') {
+        const parsed = timestampLike.toDate();
+        if (parsed instanceof Date && !isNaN(parsed.getTime())) {
+          return parsed;
+        }
+      }
+
+      const seconds = Number(timestampLike._seconds ?? timestampLike.seconds);
+      const nanoseconds = Number(timestampLike._nanoseconds ?? timestampLike.nanoseconds ?? 0);
+      if (Number.isFinite(seconds)) {
+        const parsed = new Date(Math.floor(seconds * 1000 + nanoseconds / 1_000_000));
+        if (!isNaN(parsed.getTime())) {
+          return parsed;
+        }
+      }
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return fallback;
   }
 
   private omitUndefined<T extends Record<string, any>>(data: T): Record<string, any> {

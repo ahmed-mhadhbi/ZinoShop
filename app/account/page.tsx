@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
-import { User, Package, Heart, Settings } from 'lucide-react'
+import { User, Package, Heart, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 
 export default function AccountPage() {
   const router = useRouter()
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, logout } = useAuthStore()
   const [userData, setUserData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -32,6 +32,11 @@ export default function AccountPage() {
 
     fetchUserData()
   }, [isAuthenticated, router])
+
+  const handleLogout = () => {
+    logout()
+    router.push('/auth/login')
+  }
 
   if (!isAuthenticated || isLoading) {
     return (
@@ -84,13 +89,14 @@ export default function AccountPage() {
                   <Heart className="w-5 h-5" />
                   <span>Liste de souhaits</span>
                 </Link>
-                <Link
-                  href="/account/settings"
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700"
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
-                  <Settings className="w-5 h-5" />
-                  <span>Parametres</span>
-                </Link>
+                  <LogOut className="w-5 h-5" />
+                  <span>Log out</span>
+                </button>
               </nav>
             </div>
           </div>

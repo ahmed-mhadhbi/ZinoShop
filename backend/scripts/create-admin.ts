@@ -21,7 +21,7 @@ async function createAdmin() {
     console.log('✅ Firebase connected');
 
     // Get email and password from command line arguments or use defaults
-    const email = process.argv[2] || 'admin@zinoshop.com';
+    const email = process.argv[2] || 'zino.shop.contact@gmail.com';
     const password = process.argv[3] || 'admin123';
     const firstName = process.argv[4] || 'Admin';
     const lastName = process.argv[5] || 'User';

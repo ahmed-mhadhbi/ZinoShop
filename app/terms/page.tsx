@@ -40,7 +40,7 @@ export default function TermsPage() {
           </section>
           <section>
             <h2 className="text-2xl font-serif font-bold mb-4">Contact</h2>
-            <p>Pour toute question: legal@zinoshop.com.</p>
+            <p>Pour toute question: zino.shop.contact@gmail.com.</p>
           </section>
         </motion.div>
       </div>

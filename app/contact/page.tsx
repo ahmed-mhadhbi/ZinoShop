@@ -67,7 +67,7 @@ export default function ContactPage() {
             <div className="card p-6">
               <Mail className="w-6 h-6 text-primary-600 mb-4" />
               <h3 className="font-semibold mb-2">Email</h3>
-              <p className="text-gray-600">ahmedmha.fd@gmail.com</p>
+              <p className="text-gray-600">zino.shop.contact@gmail.com</p>
             </div>
           </div>
 
