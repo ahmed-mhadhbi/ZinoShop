@@ -146,7 +146,6 @@ export class OrdersService {
           items: orderItems,
         } as Order & { items: OrderItem[] },
         userId,
-        createOrderDto.paymentMethod,
       );
 
       return {
@@ -432,32 +431,31 @@ export class OrdersService {
   private async sendOrderEmails(
     order: Order & { items: OrderItem[] },
     userId: string,
-    paymentMethod: string,
   ): Promise<void> {
     try {
-      const user = await this.usersService.findOne(userId);
-      if (!user || !('email' in user)) {
-        return;
-      }
+      const user = await this.usersService.findOne(userId).catch(() => null);
+      const customerEmail = user && 'email' in user ? String((user as any).email || '') : '';
+      const customerName = (
+        user && ('firstName' in user || 'lastName' in user)
+          ? `${String((user as any).firstName || '')} ${String((user as any).lastName || '')}`
+          : `${String(order.customerFirstName || '')} ${String(order.customerLastName || '')}`
+      ).trim() || 'Client';
 
-      const customerEmail = (user as any).email;
-      const customerName = `${(user as any).firstName} ${(user as any).lastName}`.trim();
-
-      await this.emailService.sendOrderConfirmation(
-        order as any,
-        customerEmail,
-        customerName,
-      );
-
-      if (paymentMethod === 'pay_on_delivery') {
-        const usersCount = await this.usersService.count();
-        await this.emailService.sendOrderNotificationToAdmin(
+      if (customerEmail) {
+        await this.emailService.sendOrderConfirmation(
           order as any,
           customerEmail,
           customerName,
-          usersCount,
         );
       }
+
+      const usersCount = await this.usersService.count().catch(() => undefined);
+      await this.emailService.sendOrderNotificationToAdmin(
+        order as any,
+        customerEmail || 'N/A',
+        customerName,
+        usersCount,
+      );
     } catch (error) {
       console.error('Order email flow failed:', error);
     }
