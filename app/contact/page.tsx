@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Mail, Phone, MapPin, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
+import api from '@/lib/api'
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Le nom est obligatoire'),
@@ -28,14 +29,17 @@ export default function ContactPage() {
     resolver: zodResolver(contactSchema),
   })
 
-  const onSubmit = async () => {
+  const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await api.post('/contact', data)
       toast.success('Message envoye avec succes !')
       reset()
-    } catch (error) {
-      toast.error('Echec de l envoi du message. Veuillez reessayer.')
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          'Echec de l envoi du message. Veuillez reessayer.',
+      )
     } finally {
       setIsSubmitting(false)
     }

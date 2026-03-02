@@ -111,6 +111,8 @@ export class EmailService {
     customerName: string,
     customerCount?: number,
   ) {
+    const paymentMethodLabel = this.formatPaymentMethodLabel(order?.paymentMethod);
+    const isPayOnDelivery = String(order?.paymentMethod || '') === 'pay_on_delivery';
     const safeItems = Array.isArray(order.items) ? order.items : [];
     const totalProductsCount = safeItems.reduce(
       (sum: number, item: any) => sum + (Number(item.quantity) || 0),
@@ -164,15 +166,15 @@ export class EmailService {
             </div>
             <div class="content">
               <div class="info-box">
-                <strong>PAY ON DELIVERY ORDER</strong><br>
-                Payment will be collected upon delivery.
+                <strong>NOUVELLE COMMANDE</strong><br>
+                ${isPayOnDelivery ? 'Paiement a la livraison.' : 'Commande recue via la boutique en ligne.'}
               </div>
 
               <div class="order-details">
                 <h2>Order Information</h2>
                 <p><strong>Order Number:</strong> ${order.orderNumber}</p>
                 <p><strong>Order Date:</strong> ${orderDate}</p>
-                <p><strong>Payment Method:</strong> <span class="highlight">Pay on Delivery</span></p>
+                <p><strong>Payment Method:</strong> <span class="highlight">${paymentMethodLabel}</span></p>
                 <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
                 <p><strong>Order Status:</strong> ${order.status}</p>
               </div>
@@ -249,10 +251,22 @@ export class EmailService {
     `;
 
     return this.sendEmail(
-      'zino.shop.contact@gmail.com',
-      `New Pay on Delivery Order - ${order.orderNumber}`,
+      process.env.CONTACT_EMAIL || 'zino.shop.contact@gmail.com',
+      `New Order - ${order.orderNumber}`,
       html,
     );
+  }
+
+  private formatPaymentMethodLabel(paymentMethod: unknown): string {
+    const value = String(paymentMethod || '').toLowerCase();
+    const labels: Record<string, string> = {
+      card: 'Card',
+      paypal: 'PayPal',
+      edinar: 'E-Dinar',
+      bank: 'Bank Transfer',
+      pay_on_delivery: 'Pay on Delivery',
+    };
+    return labels[value] || (value ? value.replace(/_/g, ' ') : 'Unknown');
   }
 
   private stripHtml(html: string): string {

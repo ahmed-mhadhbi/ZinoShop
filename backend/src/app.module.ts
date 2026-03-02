@@ -12,6 +12,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { PaymentsModule } from './payments/payments.module';
 import { BlogModule } from './blog/blog.module';
 import { EmailModule } from './email/email.module';
+import { ContactModule } from './contact/contact.module';
 import { AdminGuard } from './common/guards/admin.guard';
 
 @Module({
@@ -30,6 +31,7 @@ import { AdminGuard } from './common/guards/admin.guard';
     PaymentsModule,
     BlogModule,
     EmailModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [AppService, AdminGuard],

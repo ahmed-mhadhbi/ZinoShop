@@ -54,8 +54,7 @@ export default function Promotions() {
             <div
               className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700"
               style={{
-                backgroundImage:
-                  "url('https://images.unsplash.com/photo-1511396276069-743b2a6e3b8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')",
+                backgroundImage: "url('/promotion.webp')",
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
