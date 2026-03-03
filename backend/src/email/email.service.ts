@@ -1,90 +1,96 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import * as sgMail from '@sendgrid/mail';
+
+type EmailSendResult = {
+  success: boolean;
+  provider: 'smtp';
+  messageId?: string;
+  message?: string;
+  error?: unknown;
+};
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
-  private sendgridConfigured = false;
-  private sendgridFromEmail: string | null = null;
+  private smtpUser = '';
+  private smtpFrom = '';
 
   constructor() {
-    const sendgridApiKey = (process.env.SENDGRID_API_KEY || '').trim();
-    const sendgridFromEmail = (process.env.SENDGRID_FROM_EMAIL || '').trim();
-
-    if (sendgridApiKey && sendgridFromEmail) {
-      try {
-        sgMail.setApiKey(sendgridApiKey);
-        this.sendgridConfigured = true;
-        this.sendgridFromEmail = sendgridFromEmail;
-        console.log('Email service initialized with SendGrid');
-      } catch (error) {
-        console.error('Failed to initialize SendGrid email provider:', error);
-      }
-    } else if (sendgridApiKey || sendgridFromEmail) {
-      console.warn(
-        'SendGrid is partially configured. Both SENDGRID_API_KEY and SENDGRID_FROM_EMAIL are required.',
-      );
-    }
-
-    // Create Gmail SMTP transporter only if credentials are provided
-    const smtpUser = (process.env.SMTP_USER || '').trim();
+    this.smtpUser = (process.env.SMTP_USER || '').trim();
     const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
-    
-    if (smtpUser && smtpPass) {
+    this.smtpFrom = (process.env.SMTP_FROM || this.smtpUser || 'zino.shop.contact@gmail.com').trim();
+    const smtpHost = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+    const smtpPort = Number(process.env.SMTP_PORT || 465);
+    const smtpSecure = (process.env.SMTP_SECURE || 'true').toLowerCase() !== 'false';
+
+    if (this.smtpUser && smtpPass) {
       try {
         this.transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 465,
-          secure: true, // true for 465, false for other ports
+          host: smtpHost,
+          port: Number.isFinite(smtpPort) ? smtpPort : 465,
+          secure: smtpSecure,
           connectionTimeout: 10000,
           greetingTimeout: 10000,
           socketTimeout: 10000,
           auth: {
-            user: smtpUser,
-            pass: smtpPass, // Gmail App Password
+            user: this.smtpUser,
+            pass: smtpPass,
           },
         });
-        console.log('Email service initialized with Gmail SMTP');
+        console.log(`Email service initialized with SMTP (${smtpHost}:${Number.isFinite(smtpPort) ? smtpPort : 465})`);
+
+        // Validate auth/configuration without blocking app startup.
+        void this.verifyConnection().then((result) => {
+          if (result.success) {
+            console.log('SMTP connection verified successfully');
+          } else {
+            console.error(`SMTP verification failed: ${result.message}`);
+          }
+        });
       } catch (error) {
         console.error('Failed to initialize email transporter:', error);
         this.transporter = null;
       }
-    } else if (!this.sendgridConfigured) {
-      console.warn('Email service not configured: set SendGrid or SMTP credentials');
+    } else {
+      console.warn('Email service not configured: SMTP_USER or SMTP_PASS missing');
     }
   }
 
-  async sendEmail(to: string, subject: string, html: string, text?: string) {
-    if (!this.transporter && !this.sendgridConfigured) {
+  async verifyConnection(): Promise<{ success: boolean; message: string }> {
+    if (!this.transporter) {
+      return {
+        success: false,
+        message: 'SMTP transporter is not configured',
+      };
+    }
+
+    try {
+      await this.transporter.verify();
+      return {
+        success: true,
+        message: 'SMTP connection verified',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: this.stringifyError(error),
+      };
+    }
+  }
+
+  async sendEmail(to: string, subject: string, html: string, text?: string): Promise<EmailSendResult> {
+    if (!this.transporter) {
       console.warn('Email transporter not configured. Skipping email send.');
-      return { success: false, message: 'Email service not configured' };
+      return {
+        success: false,
+        provider: 'smtp',
+        message: 'SMTP transporter not configured',
+      };
     }
 
     const plainText = text || this.stripHtml(html);
-
-    if (this.sendgridConfigured && this.sendgridFromEmail) {
-      try {
-        await sgMail.send({
-          to,
-          from: this.sendgridFromEmail,
-          subject,
-          text: plainText,
-          html,
-        });
-        console.log(`Email sent successfully to ${to} via SendGrid`);
-        return { success: true, provider: 'sendgrid' };
-      } catch (error) {
-        console.error('SendGrid email sending error:', error);
-      }
-    }
-
-    if (!this.transporter) {
-      return { success: false, message: 'No available email provider' };
-    }
-
     const mailOptions = {
-      from: process.env.SMTP_USER || this.sendgridFromEmail || 'zino.shop.contact@gmail.com',
+      from: this.smtpFrom,
       to,
       subject,
       text: plainText,
@@ -92,13 +98,22 @@ export class EmailService {
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
       console.log(`Email sent successfully to ${to} via SMTP`);
-      return { success: true, provider: 'smtp' };
+      return {
+        success: true,
+        provider: 'smtp',
+        messageId: result.messageId,
+      };
     } catch (error) {
       console.error('Email sending error:', error);
       // Don't throw error, just log it so order creation doesn't fail
-      return { success: false, error };
+      return {
+        success: false,
+        provider: 'smtp',
+        message: this.stringifyError(error),
+        error,
+      };
     }
   }
 
@@ -314,6 +329,20 @@ export class EmailService {
 
   private stripHtml(html: string): string {
     return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  private stringifyError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return 'Unknown error';
+    }
   }
 }
 
