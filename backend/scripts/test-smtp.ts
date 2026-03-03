@@ -4,9 +4,20 @@ import { EmailService } from '../src/email/email.service';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
+const unwrapQuotedValue = (value: string): string => {
+  const trimmed = String(value || '').trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+};
+
 const recipient = (process.env.SMTP_TEST_TO || process.env.CONTACT_EMAIL || '').trim();
-const smtpHost = (process.env.SMTP_HOST || 'smtp.gmail.com').trim().toLowerCase();
-const smtpPassClean = String(process.env.SMTP_PASS || '').replace(/\s+/g, '');
+const smtpHost = unwrapQuotedValue(process.env.SMTP_HOST || 'smtp.gmail.com').toLowerCase();
+const smtpPassClean = unwrapQuotedValue(process.env.SMTP_PASS || '').replace(/\s+/g, '');
 
 async function main() {
   if (!recipient) {
