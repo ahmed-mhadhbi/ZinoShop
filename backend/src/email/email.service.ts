@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import SMTPTransport = require('nodemailer/lib/smtp-transport');
 
 type EmailSendResult = {
   success: boolean;
@@ -12,31 +13,53 @@ type EmailSendResult = {
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
+  private fallbackTransporter: nodemailer.Transporter | null = null;
   private smtpUser = '';
   private smtpFrom = '';
+  private primaryTransportConfig: SMTPTransport.Options | null = null;
+  private fallbackTransportConfig: SMTPTransport.Options | null = null;
 
   constructor() {
-    this.smtpUser = (process.env.SMTP_USER || '').trim();
-    const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
-    this.smtpFrom = (process.env.SMTP_FROM || this.smtpUser || 'zino.shop.contact@gmail.com').trim();
-    const smtpHost = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
-    const smtpPort = Number(process.env.SMTP_PORT || 465);
-    const smtpSecure = (process.env.SMTP_SECURE || 'true').toLowerCase() !== 'false';
+    this.smtpUser = this.unwrapQuotedValue(process.env.SMTP_USER || '');
+    const smtpPassRaw = this.unwrapQuotedValue(process.env.SMTP_PASS || '');
+    const smtpPass = smtpPassRaw.replace(/\s+/g, '');
+    this.smtpFrom = this.unwrapQuotedValue(
+      process.env.SMTP_FROM || this.smtpUser || 'zino.shop.contact@gmail.com',
+    );
+    const smtpHost = this.unwrapQuotedValue(process.env.SMTP_HOST || 'smtp.gmail.com');
+    const smtpPort = Number(this.unwrapQuotedValue(process.env.SMTP_PORT || '465'));
+    const smtpSecure =
+      this.unwrapQuotedValue(process.env.SMTP_SECURE || 'true').toLowerCase() !== 'false';
+
+    if (smtpHost.toLowerCase().includes('gmail.com') && smtpPass.length !== 16) {
+      console.warn(
+        `SMTP_PASS length after normalization is ${smtpPass.length}. Gmail app passwords must be 16 characters.`,
+      );
+    }
 
     if (this.smtpUser && smtpPass) {
       try {
-        this.transporter = nodemailer.createTransport({
+        this.primaryTransportConfig = {
           host: smtpHost,
           port: Number.isFinite(smtpPort) ? smtpPort : 465,
           secure: smtpSecure,
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 10000,
+          connectionTimeout: 20000,
+          greetingTimeout: 20000,
+          socketTimeout: 20000,
           auth: {
             user: this.smtpUser,
             pass: smtpPass,
           },
-        });
+        };
+        this.transporter = this.createTransporter(this.primaryTransportConfig);
+
+        this.fallbackTransportConfig = this.buildFallbackTransportConfig(
+          this.primaryTransportConfig,
+        );
+        if (this.fallbackTransportConfig) {
+          this.fallbackTransporter = this.createTransporter(this.fallbackTransportConfig);
+        }
+
         console.log(`Email service initialized with SMTP (${smtpHost}:${Number.isFinite(smtpPort) ? smtpPort : 465})`);
 
         // Validate auth/configuration without blocking app startup.
@@ -68,9 +91,25 @@ export class EmailService {
       await this.transporter.verify();
       return {
         success: true,
-        message: 'SMTP connection verified',
+        message: 'SMTP connection verified (primary transport)',
       };
     } catch (error) {
+      if (this.shouldRetryWithFallback(error) && this.fallbackTransporter) {
+        try {
+          await this.fallbackTransporter.verify();
+          this.promoteFallbackTransporter();
+          return {
+            success: true,
+            message: 'SMTP connection verified (fallback transport)',
+          };
+        } catch (fallbackError) {
+          return {
+            success: false,
+            message: this.stringifyError(fallbackError),
+          };
+        }
+      }
+
       return {
         success: false,
         message: this.stringifyError(error),
@@ -98,7 +137,12 @@ export class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      let result = await this.transporter.sendMail(mailOptions);
+
+      if (!result && this.fallbackTransporter) {
+        result = await this.fallbackTransporter.sendMail(mailOptions);
+      }
+
       console.log(`Email sent successfully to ${to} via SMTP`);
       return {
         success: true,
@@ -106,6 +150,27 @@ export class EmailService {
         messageId: result.messageId,
       };
     } catch (error) {
+      if (this.shouldRetryWithFallback(error) && this.fallbackTransporter) {
+        try {
+          const fallbackResult = await this.fallbackTransporter.sendMail(mailOptions);
+          this.promoteFallbackTransporter();
+          console.log(`Email sent successfully to ${to} via SMTP fallback`);
+          return {
+            success: true,
+            provider: 'smtp',
+            messageId: fallbackResult.messageId,
+          };
+        } catch (fallbackError) {
+          console.error('SMTP fallback sending error:', fallbackError);
+          return {
+            success: false,
+            provider: 'smtp',
+            message: this.stringifyError(fallbackError),
+            error: fallbackError,
+          };
+        }
+      }
+
       console.error('Email sending error:', error);
       // Don't throw error, just log it so order creation doesn't fail
       return {
@@ -343,6 +408,83 @@ export class EmailService {
     } catch {
       return 'Unknown error';
     }
+  }
+
+  private unwrapQuotedValue(value: string): string {
+    const trimmed = String(value || '').trim();
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+      return trimmed.slice(1, -1).trim();
+    }
+    return trimmed;
+  }
+
+  private createTransporter(config: SMTPTransport.Options): nodemailer.Transporter {
+    return nodemailer.createTransport({
+      ...config,
+      tls: {
+        servername: String(config.host || 'smtp.gmail.com'),
+        rejectUnauthorized: true,
+      },
+    });
+  }
+
+  private buildFallbackTransportConfig(
+    primary: SMTPTransport.Options,
+  ): SMTPTransport.Options | null {
+    const host = String(primary.host || '').toLowerCase();
+    const port = Number(primary.port || 0);
+    const secure = Boolean(primary.secure);
+
+    if (!host.includes('gmail.com')) {
+      return null;
+    }
+
+    if (port === 465 && secure) {
+      return {
+        ...primary,
+        port: 587,
+        secure: false,
+        requireTLS: true,
+      };
+    }
+
+    if (port === 587 && !secure) {
+      return {
+        ...primary,
+        port: 465,
+        secure: true,
+        requireTLS: false,
+      };
+    }
+
+    return null;
+  }
+
+  private shouldRetryWithFallback(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const code = String((error as any).code || '').toUpperCase();
+    return ['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'EHOSTUNREACH', 'ENETUNREACH'].includes(code);
+  }
+
+  private promoteFallbackTransporter(): void {
+    if (!this.fallbackTransporter || !this.fallbackTransportConfig) {
+      return;
+    }
+
+    this.transporter = this.fallbackTransporter;
+    this.primaryTransportConfig = this.fallbackTransportConfig;
+    this.fallbackTransportConfig = this.buildFallbackTransportConfig(
+      this.primaryTransportConfig,
+    );
+    this.fallbackTransporter = this.fallbackTransportConfig
+      ? this.createTransporter(this.fallbackTransportConfig)
+      : null;
   }
 }
 
