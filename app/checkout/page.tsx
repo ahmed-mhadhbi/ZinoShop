@@ -43,6 +43,12 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, router])
 
+  useEffect(() => {
+    if (items.length === 0) {
+      router.push('/cart')
+    }
+  }, [items.length, router])
+
   const {
     register,
     handleSubmit,
@@ -86,6 +92,7 @@ export default function CheckoutPage() {
         paymentMethod: data.paymentMethod,
         customerFirstName: data.firstName,
         customerLastName: data.lastName,
+        customerEmail: data.email.trim().toLowerCase(),
         shippingAddress: data.address,
         shippingPhone: `${TUNISIA_COUNTRY_CODE}${localPhone}`,
         shipping: shipping,
@@ -119,7 +126,6 @@ export default function CheckoutPage() {
   }
 
   if (items.length === 0) {
-    router.push('/cart')
     return null
   }
 

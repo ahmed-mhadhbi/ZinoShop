@@ -114,11 +114,10 @@ export class OrdersService {
       // DO NOT include items here!
       const order = await this.firestoreService.create<Order>(this.collection, orderData);
       const normalizedOrderDate =
-        order.createdAt instanceof Date && !isNaN(order.createdAt.getTime())
-          ? order.createdAt
-          : order.updatedAt instanceof Date && !isNaN(order.updatedAt.getTime())
-          ? order.updatedAt
-          : new Date();
+        this.normalizeDateValue(order.createdAt) ??
+        this.normalizeDateValue(order.updatedAt) ??
+        this.extractDateFromOrderNumber(order.orderNumber) ??
+        new Date();
 
       // Save order items as subcollection
       const orderItemsRef = this.db.collection(`${this.collection}/${order.id}/items`);
@@ -165,48 +164,17 @@ export class OrdersService {
   }
 
   async findAll(userId?: string, includeItems: boolean = true, limit: number = 50): Promise<Order[]> {
-    const filters = userId 
-      ? [{ field: 'userId', operator: '==', value: userId }]
-      : undefined;
-
-    const orders = await this.firestoreService.findAll<Order>(
-      this.collection,
-      filters,
-      { field: 'createdAt', direction: 'desc' },
-      limit,
-    );
-
-    const normalizedOrders = orders.map((order) => this.normalizeOrderDates(order));
+    const validLimit =
+      limit > 0 && Number.isFinite(limit) ? Math.min(Math.floor(limit), 50) : 50;
+    const normalizedOrders = await this.getSortedOrders(userId);
+    const limitedOrders = normalizedOrders.slice(0, validLimit);
 
     // Only load items if requested (for performance)
     if (!includeItems) {
-      return normalizedOrders;
+      return limitedOrders;
     }
 
-    // Load items for each order (limit to avoid too many parallel requests)
-    const ordersWithItems = await Promise.all(
-      normalizedOrders.slice(0, 20).map(async (order) => {
-        const itemsSnapshot = await this.db
-          .collection(`${this.collection}/${order.id}/items`)
-          .get();
-        
-        const items = itemsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: this.normalizeOrderItemDate(data.createdAt, order.createdAt),
-          } as OrderItem;
-        });
-
-        return { ...order, items } as Order & { items: OrderItem[] };
-      })
-    );
-
-    // For orders beyond the first 20, return without items
-    const remainingOrders = normalizedOrders.slice(20).map(order => ({ ...order, items: [] } as Order & { items: OrderItem[] }));
-    
-    return [...ordersWithItems, ...remainingOrders];
+    return this.attachOrderItems(limitedOrders);
   }
 
   async findPage(
@@ -221,51 +189,24 @@ export class OrdersService {
     limit: number;
     totalPages: number;
   }> {
-    const filters = userId
-      ? [{ field: 'userId', operator: '==', value: userId }]
-      : undefined;
-
     const validPage = page > 0 && Number.isFinite(page) ? Math.floor(page) : 1;
     const validLimit = limit > 0 && Number.isFinite(limit) ? Math.min(Math.floor(limit), 50) : 20;
-
-    const { items, total } = await this.firestoreService.findPage<Order>(
-      this.collection,
-      filters,
-      validPage,
-      validLimit,
-      { field: 'createdAt', direction: 'desc' },
-    );
-
-    const normalizedOrders = items.map((order) => this.normalizeOrderDates(order));
+    const sortedOrders = await this.getSortedOrders(userId);
+    const total = sortedOrders.length;
+    const startIndex = (validPage - 1) * validLimit;
+    const endIndex = startIndex + validLimit;
+    const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
 
     if (!includeItems) {
       return {
-        orders: normalizedOrders,
+        orders: paginatedOrders,
         total,
         page: validPage,
         limit: validLimit,
         totalPages: Math.ceil(total / validLimit),
       };
     }
-
-    const ordersWithItems = await Promise.all(
-      normalizedOrders.map(async (order) => {
-        const itemsSnapshot = await this.db
-          .collection(`${this.collection}/${order.id}/items`)
-          .get();
-
-        const orderItems = itemsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: this.normalizeOrderItemDate(data.createdAt, order.createdAt),
-          } as OrderItem;
-        });
-
-        return { ...order, items: orderItems } as Order & { items: OrderItem[] };
-      }),
-    );
+    const ordersWithItems = await this.attachOrderItems(paginatedOrders);
 
     return {
       orders: ordersWithItems,
@@ -359,26 +300,126 @@ export class OrdersService {
   }
 
   private normalizeOrderDates(order: Order): Order {
-    const fallbackDate =
-      order.updatedAt instanceof Date && !isNaN(order.updatedAt.getTime())
-        ? order.updatedAt
-        : new Date();
+    const parsedCreatedAt = this.normalizeDateValue(order.createdAt);
+    const parsedUpdatedAt = this.normalizeDateValue(order.updatedAt);
+    const parsedFromOrderNumber = this.extractDateFromOrderNumber(order.orderNumber);
 
     const createdAt =
-      order.createdAt instanceof Date && !isNaN(order.createdAt.getTime())
-        ? order.createdAt
-        : fallbackDate;
+      parsedCreatedAt ??
+      parsedFromOrderNumber ??
+      parsedUpdatedAt ??
+      new Date(0);
 
-    const updatedAt =
-      order.updatedAt instanceof Date && !isNaN(order.updatedAt.getTime())
-        ? order.updatedAt
-        : createdAt;
+    const updatedAt = parsedUpdatedAt ?? createdAt;
 
     return {
       ...order,
       createdAt,
       updatedAt,
     };
+  }
+
+  private normalizeDateValue(value: unknown): Date | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      return value;
+    }
+
+    if (value && typeof value === 'object') {
+      const timestampLike = value as {
+        toDate?: () => Date;
+        _seconds?: number;
+        seconds?: number;
+        _nanoseconds?: number;
+        nanoseconds?: number;
+      };
+
+      if (typeof timestampLike.toDate === 'function') {
+        const parsed = timestampLike.toDate();
+        if (parsed instanceof Date && !isNaN(parsed.getTime())) {
+          return parsed;
+        }
+      }
+
+      const seconds = Number(timestampLike._seconds ?? timestampLike.seconds);
+      const nanoseconds = Number(timestampLike._nanoseconds ?? timestampLike.nanoseconds ?? 0);
+      if (Number.isFinite(seconds) && Number.isFinite(nanoseconds)) {
+        const parsed = new Date(Math.floor(seconds * 1000 + nanoseconds / 1_000_000));
+        if (!isNaN(parsed.getTime())) {
+          return parsed;
+        }
+      }
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractDateFromOrderNumber(orderNumber: unknown): Date | undefined {
+    if (typeof orderNumber !== 'string') {
+      return undefined;
+    }
+
+    const match = orderNumber.match(/^ORD-(\d{10,13})-/);
+    if (!match) {
+      return undefined;
+    }
+
+    const rawTimestamp = Number(match[1]);
+    if (!Number.isFinite(rawTimestamp)) {
+      return undefined;
+    }
+
+    const millis = match[1].length === 10 ? rawTimestamp * 1000 : rawTimestamp;
+    const parsed = new Date(millis);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
+  }
+
+  private async getSortedOrders(userId?: string): Promise<Order[]> {
+    const filters = userId
+      ? [{ field: 'userId', operator: '==', value: userId }]
+      : undefined;
+
+    const orders = await this.firestoreService.findAll<Order>(
+      this.collection,
+      filters,
+    );
+
+    return orders
+      .map((order) => this.normalizeOrderDates(order))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  private async attachOrderItems(
+    orders: Order[],
+  ): Promise<(Order & { items: OrderItem[] })[]> {
+    return Promise.all(
+      orders.map(async (order) => {
+        const itemsSnapshot = await this.db
+          .collection(`${this.collection}/${order.id}/items`)
+          .get();
+
+        const orderItems = itemsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: this.normalizeOrderItemDate(data.createdAt, order.createdAt),
+          } as OrderItem;
+        });
+
+        return { ...order, items: orderItems } as Order & { items: OrderItem[] };
+      }),
+    );
   }
 
   private normalizeOrderItemDate(value: unknown, fallback: Date): Date {
@@ -434,7 +475,12 @@ export class OrdersService {
   ): Promise<void> {
     try {
       const user = await this.usersService.findOne(userId).catch(() => null);
-      const customerEmail = user && 'email' in user ? String((user as any).email || '') : '';
+      const emailFromOrder = String((order as any).customerEmail || '')
+        .trim()
+        .toLowerCase();
+      const customerEmail =
+        emailFromOrder ||
+        (user && 'email' in user ? String((user as any).email || '').trim().toLowerCase() : '');
       const customerName = (
         user && ('firstName' in user || 'lastName' in user)
           ? `${String((user as any).firstName || '')} ${String((user as any).lastName || '')}`
@@ -442,20 +488,26 @@ export class OrdersService {
       ).trim() || 'Client';
 
       if (customerEmail) {
-        await this.emailService.sendOrderConfirmation(
+        const customerEmailResult = await this.emailService.sendOrderConfirmation(
           order as any,
           customerEmail,
           customerName,
         );
+        if (!customerEmailResult?.success) {
+          console.error('Failed to send customer order confirmation email');
+        }
       }
 
       const usersCount = await this.usersService.count().catch(() => undefined);
-      await this.emailService.sendOrderNotificationToAdmin(
+      const adminEmailResult = await this.emailService.sendOrderNotificationToAdmin(
         order as any,
         customerEmail || 'N/A',
         customerName,
         usersCount,
       );
+      if (!adminEmailResult?.success) {
+        console.error('Failed to send admin order notification email');
+      }
     } catch (error) {
       console.error('Order email flow failed:', error);
     }

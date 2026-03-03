@@ -7,6 +7,7 @@ import {
   IsOptional,
   Min,
   Matches,
+  IsEmail,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -46,6 +47,11 @@ export class CreateOrderDto {
   @ApiProperty()
   @IsString()
   customerLastName: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEmail()
+  customerEmail?: string;
 
   @ApiProperty()
   @IsString()

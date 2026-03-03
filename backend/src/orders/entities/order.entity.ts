@@ -26,6 +26,7 @@ export class Order {
   id: string;
   orderNumber: string;
   userId: string;
+  customerEmail?: string;
   customerFirstName?: string;
   customerLastName?: string;
   subtotal: number;

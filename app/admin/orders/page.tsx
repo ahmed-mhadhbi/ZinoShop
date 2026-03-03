@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { parseDateValue } from "@/lib/date";
 import toast from "react-hot-toast";
 
 const statusOptions = [
@@ -20,9 +21,8 @@ export default function AdminOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const formatOrderDateTime = (value: any) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? "-" : date.toLocaleString();
+    const date = parseDateValue(value);
+    return date ? date.toLocaleString() : "-";
   };
 
   const fetchOrders = useCallback(async (targetPage: number = 1) => {

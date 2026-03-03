@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { getFirestore } from '../config/firebase.config';
 import * as admin from 'firebase-admin';
 
@@ -187,28 +187,84 @@ export class FirestoreService {
 
   // Convert Firestore Timestamps to Date objects
   private convertTimestamps(data: any): any {
-    if (!data) return data;
+    return this.convertTimestampsDeep(data);
+  }
 
-    const converted = { ...data };
-
-    if (converted.createdAt && converted.createdAt.toDate) {
-      converted.createdAt = converted.createdAt.toDate();
-    }
-    if (converted.updatedAt && converted.updatedAt.toDate) {
-      converted.updatedAt = converted.updatedAt.toDate();
+  private convertTimestampsDeep(value: any): any {
+    if (value === null || value === undefined) {
+      return value;
     }
 
-    return converted;
+    const parsedDate = this.parseTimestampLike(value);
+    if (parsedDate) {
+      return parsedDate;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.convertTimestampsDeep(item));
+    }
+
+    if (this.isPlainObject(value)) {
+      const converted: Record<string, any> = {};
+      Object.entries(value).forEach(([key, nestedValue]) => {
+        converted[key] = this.convertTimestampsDeep(nestedValue);
+      });
+      return converted;
+    }
+
+    return value;
+  }
+
+  private parseTimestampLike(value: unknown): Date | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const candidate = value as {
+      toDate?: () => Date;
+      _seconds?: number;
+      seconds?: number;
+      _nanoseconds?: number;
+      nanoseconds?: number;
+    };
+
+    if (typeof candidate.toDate === 'function') {
+      const parsed = candidate.toDate();
+      if (parsed instanceof Date && !isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    const seconds = Number(candidate._seconds ?? candidate.seconds);
+    const nanoseconds = Number(candidate._nanoseconds ?? candidate.nanoseconds ?? 0);
+    if (!Number.isFinite(seconds) || !Number.isFinite(nanoseconds)) {
+      return null;
+    }
+
+    const parsed = new Date(Math.floor(seconds * 1000 + nanoseconds / 1_000_000));
+    return isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private sanitizeForFirestore<T>(value: T): T {
+    if (value === null || value === undefined) {
+      return value;
+    }
+
     if (Array.isArray(value)) {
       return value
         .map((item) => this.sanitizeForFirestore(item))
         .filter((item) => item !== undefined) as T;
     }
 
-    if (value && typeof value === 'object') {
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (!this.isPlainObject(value)) {
+      return value;
+    }
+
+    if (typeof value === 'object') {
       const result: Record<string, any> = {};
       Object.entries(value as Record<string, any>).forEach(([key, val]) => {
         if (val === undefined) {
@@ -220,6 +276,14 @@ export class FirestoreService {
     }
 
     return value;
+  }
+
+  private isPlainObject(value: unknown): value is Record<string, any> {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
   }
 
   // Get collection reference for complex queries
