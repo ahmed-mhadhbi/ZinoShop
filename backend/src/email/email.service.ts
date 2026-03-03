@@ -1,14 +1,35 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
+  private sendgridConfigured = false;
+  private sendgridFromEmail: string | null = null;
 
   constructor() {
+    const sendgridApiKey = (process.env.SENDGRID_API_KEY || '').trim();
+    const sendgridFromEmail = (process.env.SENDGRID_FROM_EMAIL || '').trim();
+
+    if (sendgridApiKey && sendgridFromEmail) {
+      try {
+        sgMail.setApiKey(sendgridApiKey);
+        this.sendgridConfigured = true;
+        this.sendgridFromEmail = sendgridFromEmail;
+        console.log('Email service initialized with SendGrid');
+      } catch (error) {
+        console.error('Failed to initialize SendGrid email provider:', error);
+      }
+    } else if (sendgridApiKey || sendgridFromEmail) {
+      console.warn(
+        'SendGrid is partially configured. Both SENDGRID_API_KEY and SENDGRID_FROM_EMAIL are required.',
+      );
+    }
+
     // Create Gmail SMTP transporter only if credentials are provided
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
+    const smtpUser = (process.env.SMTP_USER || '').trim();
+    const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
     
     if (smtpUser && smtpPass) {
       try {
@@ -29,29 +50,51 @@ export class EmailService {
         console.error('Failed to initialize email transporter:', error);
         this.transporter = null;
       }
-    } else {
-      console.warn('Email service not configured: SMTP_USER or SMTP_PASS not set');
+    } else if (!this.sendgridConfigured) {
+      console.warn('Email service not configured: set SendGrid or SMTP credentials');
     }
   }
 
   async sendEmail(to: string, subject: string, html: string, text?: string) {
-    if (!this.transporter) {
+    if (!this.transporter && !this.sendgridConfigured) {
       console.warn('Email transporter not configured. Skipping email send.');
       return { success: false, message: 'Email service not configured' };
     }
 
+    const plainText = text || this.stripHtml(html);
+
+    if (this.sendgridConfigured && this.sendgridFromEmail) {
+      try {
+        await sgMail.send({
+          to,
+          from: this.sendgridFromEmail,
+          subject,
+          text: plainText,
+          html,
+        });
+        console.log(`Email sent successfully to ${to} via SendGrid`);
+        return { success: true, provider: 'sendgrid' };
+      } catch (error) {
+        console.error('SendGrid email sending error:', error);
+      }
+    }
+
+    if (!this.transporter) {
+      return { success: false, message: 'No available email provider' };
+    }
+
     const mailOptions = {
-      from: process.env.SMTP_USER || 'zino.shop.contact@gmail.com',
+      from: process.env.SMTP_USER || this.sendgridFromEmail || 'zino.shop.contact@gmail.com',
       to,
       subject,
-      text: text || this.stripHtml(html),
+      text: plainText,
       html,
     };
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${to}`);
-      return { success: true };
+      console.log(`Email sent successfully to ${to} via SMTP`);
+      return { success: true, provider: 'smtp' };
     } catch (error) {
       console.error('Email sending error:', error);
       // Don't throw error, just log it so order creation doesn't fail

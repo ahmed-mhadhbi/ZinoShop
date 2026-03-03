@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Package, Calendar, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
+import { parseDateValue } from '@/lib/date'
 
 const statusLabels: Record<string, string> = {
   pending: 'En attente',
@@ -23,6 +24,10 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const formatOrderDate = (value: any) => {
+    const date = parseDateValue(value)
+    return date ? date.toLocaleDateString() : '-'
+  }
 
   const fetchOrders = useCallback(async (targetPage: number) => {
     try {
@@ -114,7 +119,7 @@ export default function OrdersPage() {
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {formatOrderDate(order.createdAt)}
                         </span>
                       </div>
                       <div>

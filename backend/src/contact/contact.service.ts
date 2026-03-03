@@ -72,7 +72,7 @@ export class ContactService {
 
     if (!sendResult?.success) {
       throw new ServiceUnavailableException(
-        'Le service email est indisponible. Verifiez SMTP_USER/SMTP_PASS.',
+        'Le service email est indisponible. Verifiez la configuration SendGrid/SMTP.',
       );
     }
 
@@ -91,4 +91,3 @@ export class ContactService {
       .replace(/'/g, '&#39;');
   }
 }
-

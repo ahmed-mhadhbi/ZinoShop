@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
-import { Package, ShoppingCart, Users, DollarSign, TrendingUp, Plus } from 'lucide-react'
+import { Package, ShoppingCart, Users, DollarSign, Plus } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
+import { parseDateValue } from '@/lib/date'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -19,9 +20,8 @@ export default function AdminDashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const formatOrderDate = (value: any) => {
-    if (!value) return '-'
-    const date = new Date(value)
-    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString()
+    const date = parseDateValue(value)
+    return date ? date.toLocaleDateString() : '-'
   }
 
   useEffect(() => {
