@@ -494,7 +494,9 @@ export class OrdersService {
           customerName,
         );
         if (!customerEmailResult?.success) {
-          console.error('Failed to send customer order confirmation email');
+          console.error(
+            `Failed to send customer order confirmation email: ${String(customerEmailResult?.message || 'unknown error')}`,
+          );
         }
       }
 
@@ -506,7 +508,9 @@ export class OrdersService {
         usersCount,
       );
       if (!adminEmailResult?.success) {
-        console.error('Failed to send admin order notification email');
+        console.error(
+          `Failed to send admin order notification email: ${String(adminEmailResult?.message || 'unknown error')}`,
+        );
       }
     } catch (error) {
       console.error('Order email flow failed:', error);

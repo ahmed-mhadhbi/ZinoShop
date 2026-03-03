@@ -4,7 +4,7 @@ import SMTPTransport = require('nodemailer/lib/smtp-transport');
 
 type EmailSendResult = {
   success: boolean;
-  provider: 'smtp';
+  provider: 'smtp' | 'resend';
   messageId?: string;
   message?: string;
   error?: unknown;
@@ -18,6 +18,9 @@ export class EmailService {
   private smtpFrom = '';
   private primaryTransportConfig: SMTPTransport.Options | null = null;
   private fallbackTransportConfig: SMTPTransport.Options | null = null;
+  private resendApiKey = '';
+  private resendFrom = '';
+  private resendEnabled = false;
 
   constructor() {
     this.smtpUser = this.unwrapQuotedValue(process.env.SMTP_USER || '');
@@ -30,10 +33,21 @@ export class EmailService {
     const smtpPort = Number(this.unwrapQuotedValue(process.env.SMTP_PORT || '465'));
     const smtpSecure =
       this.unwrapQuotedValue(process.env.SMTP_SECURE || 'true').toLowerCase() !== 'false';
+    this.resendApiKey = this.unwrapQuotedValue(process.env.RESEND_API_KEY || '');
+    this.resendFrom = this.unwrapQuotedValue(process.env.RESEND_FROM || '');
+    this.resendEnabled = Boolean(this.resendApiKey && this.resendFrom);
 
     if (smtpHost.toLowerCase().includes('gmail.com') && smtpPass.length !== 16) {
       console.warn(
         `SMTP_PASS length after normalization is ${smtpPass.length}. Gmail app passwords must be 16 characters.`,
+      );
+    }
+
+    if (this.resendEnabled) {
+      console.log('Resend fallback email provider is enabled');
+    } else if (this.resendApiKey || this.resendFrom) {
+      console.warn(
+        'Resend is partially configured. Set both RESEND_API_KEY and RESEND_FROM for HTTP fallback.',
       );
     }
 
@@ -74,13 +88,22 @@ export class EmailService {
         console.error('Failed to initialize email transporter:', error);
         this.transporter = null;
       }
-    } else {
+    } else if (!this.resendEnabled) {
       console.warn('Email service not configured: SMTP_USER or SMTP_PASS missing');
+    } else {
+      console.warn('SMTP not configured. Using Resend fallback only.');
     }
   }
 
   async verifyConnection(): Promise<{ success: boolean; message: string }> {
     if (!this.transporter) {
+      if (this.resendEnabled) {
+        return {
+          success: true,
+          message: 'SMTP not configured; Resend fallback is enabled',
+        };
+      }
+
       return {
         success: false,
         message: 'SMTP transporter is not configured',
@@ -110,6 +133,13 @@ export class EmailService {
         }
       }
 
+      if (this.resendEnabled) {
+        return {
+          success: true,
+          message: `SMTP unavailable (${this.stringifyError(error)}), Resend fallback is enabled`,
+        };
+      }
+
       return {
         success: false,
         message: this.stringifyError(error),
@@ -118,8 +148,40 @@ export class EmailService {
   }
 
   async sendEmail(to: string, subject: string, html: string, text?: string): Promise<EmailSendResult> {
+    const plainText = text || this.stripHtml(html);
+    const smtpResult = await this.sendViaSmtp(to, subject, html, plainText);
+    if (smtpResult.success) {
+      return smtpResult;
+    }
+
+    if (this.resendEnabled) {
+      const resendResult = await this.sendViaResend(to, subject, html, plainText);
+      if (resendResult.success) {
+        console.log(`Email sent successfully to ${to} via Resend fallback`);
+      }
+      return resendResult;
+    }
+
     if (!this.transporter) {
       console.warn('Email transporter not configured. Skipping email send.');
+      return {
+        success: false,
+        provider: 'smtp',
+        message: 'SMTP transporter not configured and Resend fallback is disabled',
+      };
+    }
+
+    console.error(`Email sending error: ${smtpResult.message || 'Unknown SMTP error'}`);
+    return smtpResult;
+  }
+
+  private async sendViaSmtp(
+    to: string,
+    subject: string,
+    html: string,
+    plainText: string,
+  ): Promise<EmailSendResult> {
+    if (!this.transporter) {
       return {
         success: false,
         provider: 'smtp',
@@ -127,7 +189,6 @@ export class EmailService {
       };
     }
 
-    const plainText = text || this.stripHtml(html);
     const mailOptions = {
       from: this.smtpFrom,
       to,
@@ -171,14 +232,73 @@ export class EmailService {
         }
       }
 
-      console.error('Email sending error:', error);
-      // Don't throw error, just log it so order creation doesn't fail
       return {
         success: false,
         provider: 'smtp',
         message: this.stringifyError(error),
         error,
       };
+    }
+  }
+
+  private async sendViaResend(
+    to: string,
+    subject: string,
+    html: string,
+    plainText: string,
+  ): Promise<EmailSendResult> {
+    if (!this.resendEnabled) {
+      return {
+        success: false,
+        provider: 'resend',
+        message: 'Resend fallback is not configured',
+      };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: this.resendFrom,
+          to: [to],
+          subject,
+          html,
+          text: plainText,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const payload = await response.text();
+        return {
+          success: false,
+          provider: 'resend',
+          message: `Resend API error (${response.status}): ${payload}`,
+        };
+      }
+
+      const payload = (await response.json()) as { id?: string };
+      return {
+        success: true,
+        provider: 'resend',
+        messageId: payload?.id,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        provider: 'resend',
+        message: this.stringifyError(error),
+        error,
+      };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

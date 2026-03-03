@@ -18,6 +18,10 @@ const unwrapQuotedValue = (value: string): string => {
 const recipient = (process.env.SMTP_TEST_TO || process.env.CONTACT_EMAIL || '').trim();
 const smtpHost = unwrapQuotedValue(process.env.SMTP_HOST || 'smtp.gmail.com').toLowerCase();
 const smtpPassClean = unwrapQuotedValue(process.env.SMTP_PASS || '').replace(/\s+/g, '');
+const resendEnabled = Boolean(
+  unwrapQuotedValue(process.env.RESEND_API_KEY || '') &&
+  unwrapQuotedValue(process.env.RESEND_FROM || ''),
+);
 
 async function main() {
   if (!recipient) {
@@ -25,7 +29,7 @@ async function main() {
     process.exit(1);
   }
 
-  if (smtpHost.includes('gmail.com') && smtpPassClean.length !== 16) {
+  if (!resendEnabled && smtpHost.includes('gmail.com') && smtpPassClean.length !== 16) {
     console.error(
       `SMTP_PASS looks invalid for Gmail app passwords. Expected 16 chars after removing spaces, got ${smtpPassClean.length}.`,
     );
@@ -36,7 +40,7 @@ async function main() {
   const verification = await emailService.verifyConnection();
 
   if (!verification.success) {
-    console.error(`SMTP verification failed: ${verification.message}`);
+    console.error(`Email provider verification failed: ${verification.message}`);
     process.exit(1);
   }
 
@@ -53,7 +57,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`SMTP test email sent successfully to ${recipient}. messageId=${sendResult.messageId || 'n/a'}`);
+  console.log(
+    `Email test sent successfully to ${recipient}. provider=${sendResult.provider} messageId=${sendResult.messageId || 'n/a'}`,
+  );
 }
 
 main().catch((error) => {
