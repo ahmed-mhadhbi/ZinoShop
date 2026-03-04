@@ -79,9 +79,9 @@ export class EmailService {
         // Validate auth/configuration without blocking app startup.
         void this.verifyConnection().then((result) => {
           if (result.success) {
-            console.log('SMTP connection verified successfully');
+            console.log(`Email provider verification: ${result.message}`);
           } else {
-            console.error(`SMTP verification failed: ${result.message}`);
+            console.error(`Email provider verification failed: ${result.message}`);
           }
         });
       } catch (error) {
