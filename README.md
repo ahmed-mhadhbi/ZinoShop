@@ -41,7 +41,7 @@ A modern, full-stack e-commerce platform for luxury jewelry built with Next.js a
 - **API Documentation**: Swagger
 - **Payments**: Stripe integration
 - **File Storage**: Cloudinary (configured)
-- **Email**: SendGrid (configured)
+- **Email**: Resend (configured)
 
 ## Getting Started
 
@@ -50,7 +50,7 @@ A modern, full-stack e-commerce platform for luxury jewelry built with Next.js a
 - PostgreSQL database
 - (Optional) Cloudinary account for image storage
 - (Optional) Stripe account for payments
-- (Optional) SendGrid account for emails
+- (Optional) Resend account for emails
 
 ### Installation
 

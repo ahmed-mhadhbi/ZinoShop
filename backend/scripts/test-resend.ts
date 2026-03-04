@@ -4,12 +4,12 @@ import { EmailService } from '../src/email/email.service';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
-const recipient = (process.env.SENDGRID_TEST_TO || process.env.CONTACT_EMAIL || '').trim();
+const recipient = (process.env.RESEND_TEST_TO || process.env.CONTACT_EMAIL || '').trim();
 
 async function main() {
   if (!recipient) {
     throw new Error(
-      'Missing recipient. Set SENDGRID_TEST_TO or CONTACT_EMAIL in backend/.env',
+      'Missing recipient. Set RESEND_TEST_TO or CONTACT_EMAIL in backend/.env',
     );
   }
 
@@ -20,16 +20,16 @@ async function main() {
     throw new Error(`Email provider verification failed: ${verification.message}`);
   }
 
-  const subject = `ZinoShop SendGrid Test - ${new Date().toISOString()}`;
+  const subject = `ZinoShop Resend Test - ${new Date().toISOString()}`;
   const html = `
-    <h2>ZinoShop SendGrid test</h2>
-    <p>This is a direct SendGrid validation email from backend/scripts/test-sendgrid.ts.</p>
+    <h2>ZinoShop Resend test</h2>
+    <p>This is a direct Resend validation email from backend/scripts/test-resend.ts.</p>
   `;
-  const text = 'ZinoShop SendGrid test - backend/scripts/test-sendgrid.ts';
+  const text = 'ZinoShop Resend test - backend/scripts/test-resend.ts';
 
   const sendResult = await emailService.sendEmail(recipient, subject, html, text);
   if (!sendResult.success) {
-    throw new Error(`SendGrid send failed: ${sendResult.message || 'Unknown error'}`);
+    throw new Error(`Resend send failed: ${sendResult.message || 'Unknown error'}`);
   }
 
   console.log(
@@ -38,6 +38,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('SendGrid test script failed:', error);
+  console.error('Resend test script failed:', error);
   process.exitCode = 1;
 });

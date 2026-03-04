@@ -1,4 +1,4 @@
-// Email service using SendGrid
+// Email service using backend email provider (Resend)
 // This would be called from the backend
 
 export interface EmailOptions {

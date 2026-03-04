@@ -23,7 +23,7 @@ This project supports four ways to initialize Firebase (see `src/config/firebase
 Deploy notes — Render (backend)
 - Add the service (web service) and set environment variables in the Render dashboard:
   - Either `FIREBASE_SERVICE_ACCOUNT` (paste JSON) OR `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`.
-  - Also add `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `NEXT_PUBLIC_API_URL` (frontend URL), and any other secrets.
+  - Also add `RESEND_API_KEY`, `RESEND_FROM`, `NEXT_PUBLIC_API_URL` (frontend URL), and any other secrets.
 - Build: `npm run build`, Start: `npm run start:prod` (or start:dev for staging).
 
 Deploy notes — Vercel (frontend)
