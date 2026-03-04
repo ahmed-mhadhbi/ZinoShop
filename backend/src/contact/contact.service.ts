@@ -14,7 +14,7 @@ export class ContactService {
 
     const targetEmail =
       process.env.CONTACT_EMAIL ||
-      process.env.SMTP_USER ||
+      process.env.SENDGRID_FROM_EMAIL ||
       'zino.shop.contact@gmail.com';
 
     const escapedName = this.escapeHtml(name);
@@ -72,7 +72,7 @@ export class ContactService {
 
     if (!sendResult?.success) {
       throw new ServiceUnavailableException(
-        'Le service email est indisponible. Verifiez la configuration SMTP.',
+        'Le service email est indisponible. Verifiez la configuration SendGrid.',
       );
     }
 
