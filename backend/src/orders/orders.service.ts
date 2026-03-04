@@ -137,7 +137,7 @@ export class OrdersService {
 
       await batch.commit();
 
-      // Trigger emails asynchronously so checkout response is not blocked by SMTP latency.
+      // Trigger emails asynchronously so checkout response is not blocked by email latency.
       void this.sendOrderEmails(
         {
           ...order,
