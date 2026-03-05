@@ -138,14 +138,16 @@ export class OrdersService {
       await batch.commit();
 
       // Trigger emails asynchronously so checkout response is not blocked by email latency.
-      void this.sendOrderEmails(
-        {
-          ...order,
-          createdAt: normalizedOrderDate,
-          items: orderItems,
-        } as Order & { items: OrderItem[] },
-        userId,
-      );
+      if (this.isOrderEmailEnabled()) {
+        void this.sendOrderEmails(
+          {
+            ...order,
+            createdAt: normalizedOrderDate,
+            items: orderItems,
+          } as Order & { items: OrderItem[] },
+          userId,
+        );
+      }
 
       return {
         ...order,
@@ -245,17 +247,29 @@ export class OrdersService {
     return { totalOrders, totalRevenue };
   }
 
-  async findOne(id: string, userId?: string): Promise<Order> {
+  async findOne(
+    id: string,
+    options?: { userId?: string; markAsOpened?: boolean },
+  ): Promise<Order> {
+    const userId = options?.userId;
+    const markAsOpened = options?.markAsOpened === true;
     const foundOrder = await this.firestoreService.findById<Order>(this.collection, id);
     
     if (!foundOrder) {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
-    const order = this.normalizeOrderDates(foundOrder);
+    let order = this.normalizeOrderDates(foundOrder);
 
     if (userId && order.userId !== userId) {
       throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    if (markAsOpened && !order.adminOpenedAt) {
+      const updatedOrder = await this.firestoreService.update<Order>(this.collection, id, {
+        adminOpenedAt: new Date(),
+      } as Partial<Order>);
+      order = this.normalizeOrderDates(updatedOrder);
     }
 
     // Load order items
@@ -283,6 +297,24 @@ export class OrdersService {
     return this.firestoreService.update<Order>(this.collection, id, updateOrderDto);
   }
 
+  async remove(id: string): Promise<void> {
+    const order = await this.firestoreService.findById<Order>(this.collection, id);
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    const orderItemsSnapshot = await this.db
+      .collection(`${this.collection}/${id}/items`)
+      .get();
+
+    const batch = this.db.batch();
+    orderItemsSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    batch.delete(this.db.collection(this.collection).doc(id));
+    await batch.commit();
+  }
+
   async updateStatus(
     id: string,
     status: OrderStatus,
@@ -302,6 +334,7 @@ export class OrdersService {
   private normalizeOrderDates(order: Order): Order {
     const parsedCreatedAt = this.normalizeDateValue(order.createdAt);
     const parsedUpdatedAt = this.normalizeDateValue(order.updatedAt);
+    const parsedAdminOpenedAt = this.normalizeDateValue(order.adminOpenedAt);
     const parsedFromOrderNumber = this.extractDateFromOrderNumber(order.orderNumber);
 
     const createdAt =
@@ -314,6 +347,7 @@ export class OrdersService {
 
     return {
       ...order,
+      adminOpenedAt: parsedAdminOpenedAt,
       createdAt,
       updatedAt,
     };
@@ -515,5 +549,10 @@ export class OrdersService {
     } catch (error) {
       console.error('Order email flow failed:', error);
     }
+  }
+
+  private isOrderEmailEnabled(): boolean {
+    const rawFlag = String(process.env.ORDER_EMAILS_ENABLED ?? 'false').trim().toLowerCase();
+    return rawFlag === 'true' || rawFlag === '1' || rawFlag === 'yes' || rawFlag === 'on';
   }
 }

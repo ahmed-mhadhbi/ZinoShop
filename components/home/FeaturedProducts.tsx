@@ -27,8 +27,8 @@ export default function FeaturedProducts() {
 
     const fetchFeatured = async () => {
       try {
-        const res = await api.get('/products/featured')
-        if (!cancelled) setProducts(res.data || [])
+        const res = await api.get(`/products/featured?_t=${Date.now()}`)
+        if (!cancelled) setProducts((res.data || []).slice(0, 4))
       } catch (err: any) {
         console.error('Failed to fetch featured products', err)
         toast.error(err?.response?.data?.message || 'Echec du chargement des produits en vedette')
@@ -71,7 +71,7 @@ export default function FeaturedProducts() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {loading ? (
             renderSkeletons()
           ) : products && products.length > 0 ? (

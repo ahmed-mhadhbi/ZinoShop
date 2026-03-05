@@ -36,6 +36,7 @@ export class Product {
   rating?: number;
   reviewCount: number;
   isActive: boolean;
+  isFeatured?: boolean;
   metaTitle?: string;
   metaDescription?: string;
   createdAt: Date;
