@@ -4,6 +4,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { parseDateValue } from "@/lib/date";
 import toast from "react-hot-toast";
+import { Trash2 } from "lucide-react";
 
 const statusOptions = [
   { value: "pending", label: "En attente" },
@@ -17,6 +18,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -73,6 +75,23 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm("Voulez-vous vraiment supprimer cette commande ?")) {
+      return;
+    }
+
+    setDeletingId(orderId);
+    try {
+      await api.delete(`/orders/${orderId}`);
+      toast.success("Commande supprimee");
+      fetchOrders(page);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Echec de suppression de la commande");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="pt-24 pb-20 min-h-screen">
       <div className="container-custom">
@@ -92,10 +111,11 @@ export default function AdminOrdersPage() {
                   <th className="px-4 py-2">Commande #</th>
                   <th className="px-4 py-2">Utilisateur</th>
                   <th className="px-4 py-2">Email</th>
+                  <th className="px-4 py-2">Vue admin</th>
                   <th className="px-4 py-2">Statut</th>
                   <th className="px-4 py-2">Sous-total</th>
                   <th className="px-4 py-2">Creee le</th>
-                  <th className="px-4 py-2">Mettre a jour</th>
+                  <th className="px-4 py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,20 +128,42 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-4 py-2">{order.userId}</td>
                     <td className="px-4 py-2">{order.email || order.customerEmail || "-"}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${
+                          order.adminOpenedAt
+                            ? "bg-gray-100 text-gray-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {order.adminOpenedAt ? "Ouverte" : "Nouvelle"}
+                      </span>
+                    </td>
                     <td className="px-4 py-2 capitalize">{order.status}</td>
                     <td className="px-4 py-2">{order.subtotal?.toLocaleString()} tnd</td>
                     <td className="px-4 py-2">{formatOrderDateTime(order.createdAt)}</td>
                     <td className="px-4 py-2">
-                      <select
-                        className="input-field"
-                        value={order.status}
-                        disabled={updatingId === order.id}
-                        onChange={e => handleStatusChange(order.id, e.target.value)}
-                      >
-                        {statusOptions.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-2">
+                        <select
+                          className="input-field"
+                          value={order.status}
+                          disabled={updatingId === order.id || deletingId === order.id}
+                          onChange={e => handleStatusChange(order.id, e.target.value)}
+                        >
+                          {statusOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrder(order.id)}
+                          disabled={deletingId === order.id || updatingId === order.id}
+                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Supprimer la commande"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

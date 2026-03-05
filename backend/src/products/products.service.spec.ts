@@ -19,11 +19,11 @@ describe('ProductsService (featured cache)', () => {
   })
 
   it('caches featured results and returns cache on subsequent calls', async () => {
-    const products = Array.from({ length: 10 }).map((_, i) => ({ id: `p${i}`, rating: i }))
+    const products = Array.from({ length: 10 }).map((_, i) => ({ id: `p${i}`, updatedAt: new Date(Date.now() - i * 1000) }))
     ;(firestoreMock.findAll as jest.Mock).mockResolvedValue(products)
 
     const first = await service.getFeatured()
-    expect(first.length).toBe(8)
+    expect(first.length).toBe(4)
     expect(firestoreMock.findAll).toHaveBeenCalledTimes(1)
 
     const second = await service.getFeatured()
@@ -33,20 +33,19 @@ describe('ProductsService (featured cache)', () => {
 
   it('expires cache after TTL and refetches', async () => {
     process.env.FEATURED_CACHE_TTL_SECONDS = '1'
-    const productsA = Array.from({ length: 10 }).map((_, i) => ({ id: `a${i}`, rating: i }))
-    const productsB = Array.from({ length: 10 }).map((_, i) => ({ id: `b${i}`, rating: 10 - i }))
+    const productsA = Array.from({ length: 10 }).map((_, i) => ({ id: `a${i}`, updatedAt: new Date(Date.now() - i * 1000) }))
+    const productsB = Array.from({ length: 10 }).map((_, i) => ({ id: `b${i}`, updatedAt: new Date(Date.now() - i * 1000) }))
 
     ;(firestoreMock.findAll as jest.Mock).mockResolvedValueOnce(productsA).mockResolvedValueOnce(productsB)
 
     const first = await service.getFeatured()
-    expect(first[0].id).toBe('a9')
+    expect(first[0].id).toBe('a0')
     expect(firestoreMock.findAll).toHaveBeenCalledTimes(1)
 
     // Advance time past TTL
     jest.advanceTimersByTime(1500)
 
     const second = await service.getFeatured()
-    // productsB are created with ratings (10 - i), so highest rating is at index 0 => id 'b0'
     expect(second[0].id).toBe('b0')
     expect(firestoreMock.findAll).toHaveBeenCalledTimes(2)
 
@@ -54,7 +53,7 @@ describe('ProductsService (featured cache)', () => {
   })
 
   it('deduplicates concurrent fetches', async () => {
-    const products = Array.from({ length: 8 }).map((_, i) => ({ id: `p${i}`, rating: 10 - i }))
+    const products = Array.from({ length: 8 }).map((_, i) => ({ id: `p${i}`, updatedAt: new Date(Date.now() - i * 1000) }))
     let resolveFn: Function
     const p = new Promise((res) => { resolveFn = res })
     ;(firestoreMock.findAll as jest.Mock).mockReturnValue(p)

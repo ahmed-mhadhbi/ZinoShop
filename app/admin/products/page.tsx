@@ -5,15 +5,18 @@ import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ProductImage from '@/components/common/ProductImage'
-import { Edit, Trash2, Plus, Search } from 'lucide-react'
+import { Edit, Trash2, Plus, Search, Star } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
+
+const MAX_FEATURED_PRODUCTS = 4
 
 export default function AdminProductsPage() {
   const router = useRouter()
   const { isAuthenticated, user } = useAuthStore()
   const [products, setProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [updatingFeaturedId, setUpdatingFeaturedId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -81,9 +84,37 @@ export default function AdminProductsPage() {
     }
   }
 
+  const handleToggleFeatured = async (product: any) => {
+    const isCurrentlyFeatured = product.isFeatured === true
+    const featuredCount = products.filter((item) => item.isFeatured === true).length
+
+    if (!isCurrentlyFeatured && featuredCount >= MAX_FEATURED_PRODUCTS) {
+      toast.error(`Vous pouvez selectionner seulement ${MAX_FEATURED_PRODUCTS} produits en vedette`)
+      return
+    }
+
+    setUpdatingFeaturedId(product.id)
+    try {
+      await api.patch(`/products/${product.id}`, {
+        isFeatured: !isCurrentlyFeatured,
+      })
+      toast.success(
+        !isCurrentlyFeatured
+          ? 'Produit ajoute a la page d accueil'
+          : 'Produit retire de la page d accueil',
+      )
+      fetchProducts(page)
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Echec de mise a jour du produit')
+    } finally {
+      setUpdatingFeaturedId(null)
+    }
+  }
+
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
+  const featuredCount = products.filter((product) => product.isFeatured === true).length
 
   if (!isAuthenticated || user?.role !== 'admin' || isLoading) {
     return (
@@ -98,7 +129,9 @@ export default function AdminProductsPage() {
       <div className="container-custom">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-serif font-bold">Gerer les produits</h1>
-          <p className="text-gray-600">Total: {total}</p>
+          <p className="text-gray-600">
+            Total: {total} | Accueil: {featuredCount}/{MAX_FEATURED_PRODUCTS}
+          </p>
           <Link href="/admin/products/new" className="btn-primary flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Ajouter un produit
@@ -141,6 +174,9 @@ export default function AdminProductsPage() {
                     Stock
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Accueil
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -180,6 +216,21 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {product.stock || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFeatured(product)}
+                        disabled={updatingFeaturedId === product.id}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
+                          product.isFeatured
+                            ? 'bg-gold-100 text-gold-700 hover:bg-gold-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Star className="w-3.5 h-3.5" />
+                        {product.isFeatured ? 'En vedette' : 'Non'}
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

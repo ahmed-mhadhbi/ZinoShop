@@ -8,6 +8,7 @@ import { ProductCategory, ProductMaterial } from './entities/product.entity';
 @Injectable()
 export class ProductsService {
   private readonly collection = 'products';
+  private readonly maxFeaturedProducts = 4;
   private readonly listFields = [
     'id',
     'name',
@@ -24,6 +25,7 @@ export class ProductsService {
     'rating',
     'reviewCount',
     'isActive',
+    'isFeatured',
     'createdAt',
     'updatedAt',
   ];
@@ -38,12 +40,17 @@ export class ProductsService {
     'rating',
     'reviewCount',
     'sku',
+    'updatedAt',
     'createdAt',
   ];
 
   constructor(private firestoreService: FirestoreService) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
+    if (createProductDto.isFeatured === true) {
+      await this.ensureFeaturedLimit();
+    }
+
     // Auto-generate SKU if not provided
     if (!createProductDto.sku || createProductDto.sku.trim() === '') {
       const categoryPrefix = createProductDto.category.substring(0, 3).toUpperCase();
@@ -71,6 +78,7 @@ export class ProductsService {
         stock: createProductDto.stock || 0,
         inStock: (createProductDto.stock || 0) > 0,
         isActive: createProductDto.isActive !== undefined ? createProductDto.isActive : true,
+        isFeatured: createProductDto.isFeatured === true,
         rating: 0,
         reviewCount: 0,
       });
@@ -89,6 +97,7 @@ export class ProductsService {
       throw new InternalServerErrorException('Failed to create product');
     }
 
+    this.invalidateFeaturedCache();
     return product;
   }
 
@@ -233,6 +242,16 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     const normalizedUpdate: UpdateProductDto & { inStock?: boolean } = { ...updateProductDto };
+    const currentIsFeatured = Boolean(product.isFeatured);
+    const nextIsFeatured =
+      updateProductDto.isFeatured !== undefined
+        ? updateProductDto.isFeatured === true
+        : currentIsFeatured;
+
+    if (!currentIsFeatured && nextIsFeatured) {
+      await this.ensureFeaturedLimit(id);
+    }
+
     if (Array.isArray(updateProductDto.variants)) {
       normalizedUpdate.variants = Array.from(
         new Set(
@@ -245,11 +264,23 @@ export class ProductsService {
     if (typeof updateProductDto.stock === 'number' && Number.isFinite(updateProductDto.stock)) {
       normalizedUpdate.inStock = updateProductDto.stock > 0;
     }
-    return this.firestoreService.update<Product>(this.collection, id, normalizedUpdate);
+    if (updateProductDto.isFeatured !== undefined) {
+      normalizedUpdate.isFeatured = updateProductDto.isFeatured === true;
+    }
+
+    const updatedProduct = await this.firestoreService.update<Product>(this.collection, id, normalizedUpdate);
+    this.invalidateFeaturedCache();
+    return updatedProduct;
   }
 
   async remove(id: string): Promise<void> {
+    const product = await this.firestoreService.findById<Product>(this.collection, id);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
     await this.firestoreService.delete(this.collection, id);
+    this.invalidateFeaturedCache();
   }
 
   private featuredCache: { data: Product[]; expiresAt: number } | null = null;
@@ -275,34 +306,65 @@ export class ProductsService {
       try {
         featured = await this.firestoreService.findAll<Product>(
           this.collection,
-          [{ field: 'isActive', operator: '==', value: true }],
-          { field: 'rating', direction: 'desc' },
-          8,
+          [
+            { field: 'isActive', operator: '==', value: true },
+            { field: 'isFeatured', operator: '==', value: true },
+          ],
+          { field: 'updatedAt', direction: 'desc' },
+          this.maxFeaturedProducts,
           this.featuredFields,
         );
       } catch {
         // Fallback for environments missing the required Firestore index.
         const products = await this.firestoreService.findAll<Product>(
           this.collection,
-          [{ field: 'isActive', operator: '==', value: true }],
+          [
+            { field: 'isActive', operator: '==', value: true },
+            { field: 'isFeatured', operator: '==', value: true },
+          ],
           undefined,
           undefined,
           this.featuredFields,
         );
         featured = products
-          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-          .slice(0, 8);
+          .sort((a, b) => this.getDateValue(b.updatedAt ?? b.createdAt) - this.getDateValue(a.updatedAt ?? a.createdAt))
+          .slice(0, this.maxFeaturedProducts);
       }
 
-      featured = featured
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 8);
+      featured = featured.slice(0, this.maxFeaturedProducts);
 
       this.featuredCache = { data: featured, expiresAt: Date.now() + ttlSeconds * 1000 }
-      this.featuredCachePromise = null
       return featured
-    })()
+    })().finally(() => {
+      this.featuredCachePromise = null
+    })
 
     return this.featuredCachePromise
+  }
+
+  private async ensureFeaturedLimit(currentProductId?: string): Promise<void> {
+    const featuredProducts = await this.firestoreService.findAll<Product>(
+      this.collection,
+      [{ field: 'isFeatured', operator: '==', value: true }],
+      undefined,
+      undefined,
+      ['id'],
+    );
+
+    const selectedCount = featuredProducts.filter((featuredProduct) => featuredProduct.id !== currentProductId).length;
+
+    if (selectedCount >= this.maxFeaturedProducts) {
+      throw new BadRequestException(`Vous pouvez selectionner au maximum ${this.maxFeaturedProducts} produits en vedette.`);
+    }
+  }
+
+  private getDateValue(value: unknown): number {
+    const parsedDate = value instanceof Date ? value : new Date(value as any);
+    return Number.isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
+  }
+
+  private invalidateFeaturedCache(): void {
+    this.featuredCache = null;
+    this.featuredCachePromise = null;
   }
 }

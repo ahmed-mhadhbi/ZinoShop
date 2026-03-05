@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Delete,
   Param,
   Query,
   UseGuards,
@@ -90,8 +91,9 @@ export class OrdersController {
   @Get(':id')
   @ApiOperation({ summary: 'Get order by ID' })
   findOne(@Param('id') id: string, @Request() req) {
-    const userId = req.user.role === 'admin' ? undefined : req.user.userId;
-    return this.ordersService.findOne(id, userId);
+    const isAdmin = req.user.role === 'admin';
+    const userId = isAdmin ? undefined : req.user.userId;
+    return this.ordersService.findOne(id, { userId, markAsOpened: isAdmin });
   }
 
   @Patch(':id')
@@ -99,6 +101,13 @@ export class OrdersController {
   @ApiOperation({ summary: 'Update order (Admin only)' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Delete order (Admin only)' })
+  remove(@Param('id') id: string) {
+    return this.ordersService.remove(id);
   }
 }
 

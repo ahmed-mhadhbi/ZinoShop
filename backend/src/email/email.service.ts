@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 type EmailSendResult = {
   success: boolean;
-  provider: 'sendgrid';
+  provider: 'resend';
   messageId?: string;
   message?: string;
   error?: unknown;
@@ -10,28 +10,28 @@ type EmailSendResult = {
 
 @Injectable()
 export class EmailService {
-  private readonly sendGridApiKey: string;
-  private readonly sendGridFromEmail: string;
+  private readonly resendApiKey: string;
+  private readonly resendFromEmail: string;
   private readonly isConfigured: boolean;
 
   constructor() {
-    this.sendGridApiKey = this.unwrapQuotedValue(process.env.SENDGRID_API_KEY || '');
-    this.sendGridFromEmail = this.unwrapQuotedValue(
-      process.env.SENDGRID_FROM_EMAIL ||
+    this.resendApiKey = this.unwrapQuotedValue(process.env.RESEND_API_KEY || '');
+    this.resendFromEmail = this.unwrapQuotedValue(
+      process.env.RESEND_FROM ||
         process.env.CONTACT_EMAIL ||
         'zino.shop.contact@gmail.com',
     );
-    this.isConfigured = Boolean(this.sendGridApiKey && this.sendGridFromEmail);
+    this.isConfigured = Boolean(this.resendApiKey && this.resendFromEmail);
 
     if (!this.isConfigured) {
       console.warn(
-        'Email service not configured: set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL.',
+        'Email service not configured: set RESEND_API_KEY and RESEND_FROM.',
       );
     }
 
-    if (this.sendGridApiKey && !this.sendGridApiKey.startsWith('SG.')) {
+    if (this.resendApiKey && !this.resendApiKey.startsWith('re_')) {
       console.warn(
-        'SENDGRID_API_KEY does not start with "SG.". Verify that you are using a valid SendGrid API key.',
+        'RESEND_API_KEY does not start with "re_". Verify that you are using a valid Resend API key.',
       );
     }
   }
@@ -40,14 +40,13 @@ export class EmailService {
     if (!this.isConfigured) {
       return {
         success: false,
-        message:
-          'SendGrid is not configured (missing SENDGRID_API_KEY or SENDGRID_FROM_EMAIL).',
+        message: 'Resend is not configured (missing RESEND_API_KEY or RESEND_FROM).',
       };
     }
 
     return {
       success: true,
-      message: 'SendGrid is configured.',
+      message: 'Resend is configured.',
     };
   }
 
@@ -60,9 +59,8 @@ export class EmailService {
     if (!this.isConfigured) {
       return {
         success: false,
-        provider: 'sendgrid',
-        message:
-          'SendGrid is not configured (missing SENDGRID_API_KEY or SENDGRID_FROM_EMAIL).',
+        provider: 'resend',
+        message: 'Resend is not configured (missing RESEND_API_KEY or RESEND_FROM).',
       };
     }
 
@@ -70,7 +68,7 @@ export class EmailService {
     if (!recipient) {
       return {
         success: false,
-        provider: 'sendgrid',
+        provider: 'resend',
         message: 'Recipient email is required.',
       };
     }
@@ -82,25 +80,19 @@ export class EmailService {
     const timeout = setTimeout(() => controller.abort(), 20000);
 
     try {
-      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${this.sendGridApiKey}`,
+          Authorization: `Bearer ${this.resendApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          personalizations: [
-            {
-              to: [{ email: recipient }],
-              subject: cleanSubject,
-            },
-          ],
-          from: { email: this.sendGridFromEmail },
-          reply_to: { email: this.sendGridFromEmail },
-          content: [
-            { type: 'text/plain', value: plainText },
-            { type: 'text/html', value: html },
-          ],
+          from: this.resendFromEmail,
+          to: [recipient],
+          subject: cleanSubject,
+          html,
+          text: plainText,
+          reply_to: this.resendFromEmail,
         }),
         signal: controller.signal,
       });
@@ -109,23 +101,24 @@ export class EmailService {
         const payload = await response.text();
         return {
           success: false,
-          provider: 'sendgrid',
-          message: `SendGrid API error (${response.status}): ${payload || response.statusText}`,
+          provider: 'resend',
+          message: `Resend API error (${response.status}): ${payload || response.statusText}`,
         };
       }
 
-      const messageId = response.headers.get('x-message-id') || undefined;
-      console.log(`Email sent successfully to ${recipient} via SendGrid`);
+      const payload = (await response.json()) as { id?: string };
+      const messageId = payload?.id || undefined;
+      console.log(`Email sent successfully to ${recipient} via Resend`);
 
       return {
         success: true,
-        provider: 'sendgrid',
+        provider: 'resend',
         messageId,
       };
     } catch (error) {
       return {
         success: false,
-        provider: 'sendgrid',
+        provider: 'resend',
         message: this.stringifyError(error),
         error,
       };
@@ -495,7 +488,7 @@ export class EmailService {
 
     return this.sendEmail(
       process.env.CONTACT_EMAIL ||
-        process.env.SENDGRID_FROM_EMAIL ||
+        process.env.RESEND_FROM ||
         'zino.shop.contact@gmail.com',
       `New Order - ${String(order?.orderNumber || 'N/A')}`,
       html,

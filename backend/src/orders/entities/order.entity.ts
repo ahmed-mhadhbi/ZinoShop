@@ -44,6 +44,7 @@ export class Order {
   shippingPhone: string;
   trackingNumber?: string;
   notes?: string;
+  adminOpenedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

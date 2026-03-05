@@ -20,7 +20,7 @@ export class PaymentsService {
 
     const order = await this.ordersService.findOne(
       orderId,
-      role === 'admin' ? undefined : userId,
+      { userId: role === 'admin' ? undefined : userId },
     );
 
     const amount = Number(order.total);
