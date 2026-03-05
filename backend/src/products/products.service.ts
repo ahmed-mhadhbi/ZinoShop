@@ -333,6 +333,31 @@ export class ProductsService {
 
       featured = featured.slice(0, this.maxFeaturedProducts);
 
+      // Fallback: if no products are explicitly featured yet,
+      // show active products so homepage never appears empty.
+      if (featured.length === 0) {
+        try {
+          featured = await this.firestoreService.findAll<Product>(
+            this.collection,
+            [{ field: 'isActive', operator: '==', value: true }],
+            { field: 'updatedAt', direction: 'desc' },
+            this.maxFeaturedProducts,
+            this.featuredFields,
+          );
+        } catch {
+          const activeProducts = await this.firestoreService.findAll<Product>(
+            this.collection,
+            [{ field: 'isActive', operator: '==', value: true }],
+            undefined,
+            undefined,
+            this.featuredFields,
+          );
+          featured = activeProducts
+            .sort((a, b) => this.getDateValue(b.updatedAt ?? b.createdAt) - this.getDateValue(a.updatedAt ?? a.createdAt))
+            .slice(0, this.maxFeaturedProducts);
+        }
+      }
+
       this.featuredCache = { data: featured, expiresAt: Date.now() + ttlSeconds * 1000 }
       return featured
     })().finally(() => {
